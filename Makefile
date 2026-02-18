@@ -36,6 +36,7 @@ run_vm: $(BOOT_FILE)
 		-m maxmem=16G \
 		-smp 1,cores=1,threads=1 \
 		-accel tcg \
-		-nographic
+		-nographic \
+		-device loader,file=./$(BOOT_FILE),addr=0x80000000
 
 $(BOOT_FILE): build
