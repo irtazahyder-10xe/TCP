@@ -12,6 +12,7 @@ ENV_DIR := env
 
 ASM_FILES := $(wildcard startup/*.S)
 BOOT_FILE := boot.elf
+DTB ?=
 
 # xxx-softmmu for system emulation
 # xxx-linux-user for user emulation
@@ -41,3 +42,16 @@ run_vm: $(BOOT_FILE)
 		-device loader,file=./$(BOOT_FILE),addr=0x80000000
 
 $(BOOT_FILE): build
+
+dtb_to_dts:
+ifndef DTB
+	@echo "make dtb_to_dts: missing operand DTB"
+	@echo "make dtb_to_dts: try 'make dtb_to_dts DTB=<dtbfile>'"
+	@return 2
+endif
+	@if [ -e "$(DTB)" ]; then \
+		dtc -I dtb -O dts $(DTB) -o fdt.dts; \
+	else \
+		echo "make dtb_to_dts: $(DTB): No such file"; \
+		return 1; \
+	fi
