@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 PREFIX := riscv64-unknown-elf
 GCC := $(PREFIX)-gcc
 OBJDUMP := $(PREFIX)-objdump
@@ -47,11 +49,12 @@ dtb_to_dts:
 ifndef DTB
 	@echo "make dtb_to_dts: missing operand DTB"
 	@echo "make dtb_to_dts: try 'make dtb_to_dts DTB=<dtbfile>'"
-	@return 2
+	@exit 2
 endif
-	@if [ -e "$(DTB)" ]; then \
-		dtc -I dtb -O dts $(DTB) -o fdt.dts; \
+	@dtb_file_path=$(DTB); \
+	if [ -e "$$dtb_file_path" ]; then \
+		dtc -I dtb -O dts $$dtb_file_path -o $${dtb_file_path//dtb/dts}; \
 	else \
-		echo "make dtb_to_dts: $(DTB): No such file"; \
-		return 1; \
+		echo "make dtb_to_dts: $$dtb_file_path: No such file"; \
+		exit 1; \
 	fi
