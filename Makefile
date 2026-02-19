@@ -4,7 +4,7 @@ PREFIX := riscv64-unknown-elf
 GCC := $(PREFIX)-gcc
 OBJDUMP := $(PREFIX)-objdump
 
-CFLAGS := -march=rv32g -mabi=ilp32 -Tlink.ld -nostdlib
+CFLAGS := -march=rv32g -mabi=ilp32 -T startup/link.ld -nostdlib
 
 QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
 QEMU_FLAGS := --cpu=x86_64 --enable-debug
@@ -13,7 +13,7 @@ TARGETS := "riscv32-softmmu,riscv64-softmmu"
 ENV_DIR := env
 
 ASM_FILES := $(wildcard startup/*.S)
-BOOT_FILE := boot.elf
+BOOT_FILE := bin/boot.elf
 DTB ?=
 
 # xxx-softmmu for system emulation
@@ -28,10 +28,11 @@ clean_env:
 	@rm -rf $(ENV_DIR)/
 
 build: $(ASM_FILES)
+	@mkdir -p bin
 	$(GCC) $(CFLAGS) $^ -o $(BOOT_FILE)
 
 clean: 
-	@rm startup/*.o *.elf
+	@rm *.o bin/*
 
 run_vm: $(BOOT_FILE)
 	./env/qemu-system-riscv32 \
