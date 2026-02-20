@@ -5,3 +5,6 @@ _start:
 	/* Storing the hart misa register content in a0 */
 	csrr a0, misa
 	.size _start, .-_start
+1:
+	wfi
+	j 1b

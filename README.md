@@ -11,3 +11,11 @@ Run the following commands to create the required enviroment.
 ``` bash
     make run_vm
 ```
+
+## GDB
+Currently using the QEMU -s flag to open gdbserver on tcp:1234
+``` bash
+    # Make sure the bin/boot.dbg file is built
+    make build
+    make gdb
+```
