@@ -3,7 +3,6 @@ SHELL := /bin/bash
 PREFIX := riscv64-unknown-elf
 GCC := $(PREFIX)-gcc
 OBJDUMP := $(PREFIX)-objdump
-OBJCOPY := $(PREFIX)-objcopy
 GDB := $(PREFIX)-gdb
 
 CFLAGS := -march=rv32g -mabi=ilp32 -T startup/link.ld -nostdlib -g
@@ -16,7 +15,6 @@ ENV_DIR := env
 
 ASM_FILES := $(wildcard startup/*.S)
 BOOT_FILE := bin/boot.elf
-SYM_FILE := bin/boot.dbg
 DTB ?=
 
 # xxx-softmmu for system emulation
@@ -37,9 +35,6 @@ clean_env:
 build: $(ASM_FILES)
 	@mkdir -p bin
 	$(GCC) $(CFLAGS) $^ -o $(BOOT_FILE)
-	# Generating symbol table for $(BOOT_FILE) for gdb debugging
-	$(OBJCOPY) --only-keep-debug $(BOOT_FILE) $(SYM_FILE)
-
 
 clean: 
 	@rm *.o bin/*
@@ -59,7 +54,7 @@ run_vm: $(BOOT_FILE)
 gdb:
 	# For now using the -s flag in vm to automatically connect to GDB at
 	# tcp:1234
-	$(GDB) -ex "target remote localhost:1234" -ex "symbol-file $(SYM_FILE)"
+	$(GDB) $(BOOT_FILE) -ex "target remote localhost:1234"
 
 dtb_to_dts:
 ifndef DTB
