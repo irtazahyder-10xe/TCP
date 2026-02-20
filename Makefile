@@ -3,8 +3,9 @@ SHELL := /bin/bash
 PREFIX := riscv64-unknown-elf
 GCC := $(PREFIX)-gcc
 OBJDUMP := $(PREFIX)-objdump
+GDB := $(PREFIX)-gdb
 
-CFLAGS := -march=rv32g -mabi=ilp32 -Tlink.ld -nostdlib
+CFLAGS := -march=rv32g -mabi=ilp32 -T startup/link.ld -nostdlib -g
 
 QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
 QEMU_FLAGS := --cpu=x86_64 --enable-debug
@@ -13,11 +14,15 @@ TARGETS := "riscv32-softmmu,riscv64-softmmu"
 ENV_DIR := env
 
 ASM_FILES := $(wildcard startup/*.S)
-BOOT_FILE := boot.elf
+BOOT_FILE := bin/boot.elf
 DTB ?=
 
 # xxx-softmmu for system emulation
 # xxx-linux-user for user emulation
+.PHONY: help, build_env, clean_env, build, clean, run_vm, dtb_to_dts, gdb
+
+help:
+
 build_env:
 	@mkdir -p $(ENV_DIR); \
 	cd $(ENV_DIR); \
@@ -28,14 +33,17 @@ clean_env:
 	@rm -rf $(ENV_DIR)/
 
 build: $(ASM_FILES)
+	@mkdir -p bin
 	$(GCC) $(CFLAGS) $^ -o $(BOOT_FILE)
 
 clean: 
-	@rm startup/*.o *.elf
+	@rm *.o bin/*
 
 run_vm: $(BOOT_FILE)
 	./env/qemu-system-riscv32 \
 		-M virt,aia=aplic \
+		-cpu rv32,c=off \
+		-s -S \
 		-bios none \
 		-m maxmem=16G \
 		-smp 1,cores=1,threads=1 \
@@ -43,7 +51,10 @@ run_vm: $(BOOT_FILE)
 		-nographic \
 		-device loader,file=./$(BOOT_FILE),addr=0x80000000
 
-$(BOOT_FILE): build
+gdb:
+	# For now using the -s flag in vm to automatically connect to GDB at
+	# tcp:1234
+	$(GDB) $(BOOT_FILE) -ex "target remote localhost:1234"
 
 dtb_to_dts:
 ifndef DTB
@@ -58,3 +69,5 @@ endif
 		echo "make dtb_to_dts: $$dtb_file_path: No such file"; \
 		exit 1; \
 	fi
+
+$(BOOT_FILE): build

@@ -2,8 +2,9 @@
 	.global _start
 	.type _start, @function
 _start:
-	addi t0, zero, 5
-	// Not calling mret causes the openSBI code to be executed
-	// Because of this our value of t0 is overwritten
-	// mret
+	/* Storing the hart misa register content in a0 */
+	csrr a0, misa
 	.size _start, .-_start
+1:
+	wfi
+	j 1b
