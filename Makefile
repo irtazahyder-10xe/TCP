@@ -37,6 +37,7 @@ clean:
 run_vm: $(BOOT_FILE)
 	./env/qemu-system-riscv32 \
 		-M virt,aia=aplic \
+		-cpu rv32,c=off \
 		-bios none \
 		-m maxmem=16G \
 		-smp 1,cores=1,threads=1 \

@@ -2,5 +2,6 @@
 	.global _start
 	.type _start, @function
 _start:
-	addi t0, zero, 5
+	/* Storing the hart misa register content in a0 */
+	csrr a0, misa
 	.size _start, .-_start
