@@ -1,9 +1,10 @@
 #include "uart.h"
 
+#include <stdarg.h>
+
 typedef unsigned char uint8_t;
 
-typedef struct
-{
+typedef struct {
     uint8_t RBR; /* Multiplexed with THR or DLL */
     uint8_t IER; /* Multiplexed with DLM */
     uint8_t FCR; /* Multiplexed with IIR */
@@ -47,20 +48,53 @@ char getc()
     return UART->RBR;
 }
 
-void prints(char *s)
+void printf(const char *fmt, ...)
 {
-    while (*s != '\0')
-        putc(*s++);
-}
+    va_list args_p;
+    char *fmt_p, *str_val;
+    long int int_val, count;
 
+    va_start(args_p, fmt);
+    for(fmt_p = fmt; *fmt_p != '\0'; fmt_p++) {
+        if (*fmt_p != '%')
+        {
+            putc(*fmt_p);
+        } else {
+            switch (*(++fmt_p)) {
+                case 's':
+                    for (str_val = va_arg(args_p, char *); *str_val != '\0'; str_val++) {
+                        putc(*str_val);
+                    }
+                    break;
+                case 'd':
+                case 'h':
+                    count = 0;
+                    int base = (*fmt_p == 'd') ? 10 : 16;
+                    for (int_val = va_arg(args_p, int); int_val > 0; int_val /= base) {
+                        if ((int_val % base) > 9) {
+                            str_val[count++] = 'a' + (int_val % 10);
+                        } else {
+                            str_val[count++] = '0' + (int_val % base);
+                        }
+                    }
+                    while(count) {
+                        putc(str_val[--count]);
+                    }
+                    break;
+                default:
+                    putc('?');
+            }
+        }
+    }
+}
 
 void scans(char *s)
 {
-    do
-    {
+    do {
         *s = getc();
         putc(*s);
     } while (*s++ != '\r');
+
     *(--s) = '\0';
     putc('\n');
 }

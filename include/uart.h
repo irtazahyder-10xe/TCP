@@ -15,11 +15,11 @@ void init_uart(int *address);
 void putc(char c);
 
 /**
- * @brief Transmits null terminated string to UART
+ * @brief Displays formatted string on stdio
  *
- * @param s Null terminated string to transmit to UART
+ * @param fmt Formatted string similar to the C printf
  */
-void prints(char* s);
+void printf(const char* fmt, ...);
 
 /**
  * @brief Receives the character on UART
