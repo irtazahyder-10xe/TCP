@@ -40,6 +40,7 @@ build_env:
 clean_env:
 	@rm -rf $(ENV_DIR)/
 
+<<<<<<< HEAD
 build_qemu:
 	cd env; \
 	make all -j $(nproc); \
@@ -52,8 +53,9 @@ clean_qemu:
 build: $(ASM_FILES)
 	@mkdir -p bin
 	$(GCC) $(CFLAGS) $^ -o $(BOOT_FILE)
-
+=======
 build: $(BOOT_FILE)
+>>>>>>> 13e5443 (Clean up uart files)
 
 clean: 
 	@rm *.o bin/* build/*

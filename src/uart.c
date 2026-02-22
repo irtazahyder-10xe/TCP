@@ -1,7 +1,6 @@
 #include "uart.h"
 
-#include <stdalign.h>
-#include <stdint.h>
+typedef unsigned char uint8_t;
 
 typedef struct
 {
@@ -16,10 +15,6 @@ typedef struct
 } UartS;
 
 volatile UartS *UART;
-extern uint8_t THR __attribute__ ((alias ("UART->RBR")));
-extern uint8_t DLL __attribute__ ((alias ("UART->RBR")));
-extern uint8_t DLM __attribute__ ((alias ("UART->IER")));
-extern uint8_t IIR __attribute__ ((alias ("UART->FCR")));
 
 void init_uart(int *address)
 {
@@ -27,8 +22,8 @@ void init_uart(int *address)
 
     /* Setting baud to 9600, even though this does not matter for QEMU */
     UART->LCR = 0x80;
-    DLL = 0x0c;
-    DLM = 0x00;
+    UART->RBR = 0x0c;
+    UART->IER = 0x00;
     UART->LCR = 0x00;
 
     /* Configuring 8 bit UART, 1 stop bit, 0 parity */
@@ -42,7 +37,7 @@ void putc(char c)
 {
     /* Waiting for transmitter to become emtpy */
     while (!(UART->LSR & 0x40));
-    THR = c;
+    UART->RBR = c;
 }
 
 char getc()
