@@ -46,3 +46,21 @@ char getc()
     while (!(UART->LSR & 0x01));
     return UART->RBR;
 }
+
+void prints(char *s)
+{
+    while (*s != '\0')
+        putc(*s++);
+}
+
+
+void scans(char *s)
+{
+    do
+    {
+        *s = getc();
+        putc(*s);
+    } while (*s++ != '\r');
+    *(--s) = '\0';
+    putc('\n');
+}

@@ -62,10 +62,6 @@ clean_qemu:
 	cd env; \
 	make clean
 
-build: $(ASM_FILES)
-	@mkdir -p bin
-	$(GCC) $(CFLAGS) $^ -o $(BOOT_FILE)
-
 build: $(BOOT_FILE)
 
 clean: 
