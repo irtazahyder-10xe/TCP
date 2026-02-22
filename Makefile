@@ -32,6 +32,15 @@ build_env:
 clean_env:
 	@rm -rf $(ENV_DIR)/
 
+build_qemu:
+	cd env; \
+	make all -j $(nproc); \
+	make man
+
+clean_qemu:
+	cd env; \
+	make clean
+
 build: $(ASM_FILES)
 	@mkdir -p bin
 	$(GCC) $(CFLAGS) $^ -o $(BOOT_FILE)
