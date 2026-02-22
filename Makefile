@@ -1,11 +1,12 @@
 SHELL := /bin/bash
+CPATH := ./include
 
 PREFIX := riscv64-unknown-elf
 GCC := $(PREFIX)-gcc
 OBJDUMP := $(PREFIX)-objdump
 GDB := $(PREFIX)-gdb
 
-CFLAGS := -march=rv32g -mabi=ilp32 -T startup/link.ld -nostdlib -g
+CFLAGS := -march=rv32g -mabi=ilp32 -g -I $(CPATH)
 
 QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
 QEMU_FLAGS := --cpu=x86_64 --enable-debug
@@ -68,8 +69,9 @@ run_vm: $(BOOT_FILE)
 		-smp 1,cores=1,threads=1 \
 		-accel tcg \
 		-nographic \
-		-device loader,file=./$(BOOT_FILE),addr=0x80000000
-
+		-device loader,file=./$(BOOT_FILE),addr=0x80000000 \
+		-serial mon:stdio
+		
 gdb:
 	# For now using the -s flag in vm to automatically connect to GDB at
 	# tcp:1234
@@ -89,4 +91,14 @@ endif
 		exit 1; \
 	fi
 
-$(BOOT_FILE): build
+$(BOOT_FILE): $(OBJ_FILES)
+	@mkdir -p bin
+	@$(GCC) $(CFLAGS) -nostdlib -T startup/link.ld $^ -o $@
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p build
+	@$(GCC) $(CFLAGS) -fno-builtin -c $< -o $@
+
+$(BUILD_DIR)/%.o: $(ASM_DIR)/%.S
+	@mkdir -p build
+	@$(GCC) $(CFLAGS) -fno-builtin -c $< -o $@
