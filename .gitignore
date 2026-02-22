@@ -1,2 +1,4 @@
 env/
 *.o
+.*
+compile_commands.json
