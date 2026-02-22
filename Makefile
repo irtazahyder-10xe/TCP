@@ -1,15 +1,27 @@
 SHELL := /bin/bash
-CPATH := ./include
+
+# =================== QEMU ===================
+QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
+QEMU_FLAGS := --cpu=x86_64 --enable-debug
+
+QEMU := ./env/qemu-system-riscv32
+MACHINE := -M virt,aia=aplic
+CPUS := -cpu rv32,c=off -smp 1,cores=1,threads=1 -m maxmem=16G
+ACCEL := -accel tcg
+DEVICE := 
+BACKEND := -serial mon:stdio
+INTERFACE := -nographic
+BOOT = $(DEBUG) -bios none -device loader,file=$(BOOT_FILE),addr=0x80000000
+
+# =================== GCC ===================
 
 PREFIX := riscv64-unknown-elf
 GCC := $(PREFIX)-gcc
 OBJDUMP := $(PREFIX)-objdump
 GDB := $(PREFIX)-gdb
 
+CPATH := ./include
 CFLAGS := -march=rv32g -mabi=ilp32 -g -I $(CPATH)
-
-QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
-QEMU_FLAGS := --cpu=x86_64 --enable-debug
 
 TARGETS := "riscv32-softmmu,riscv64-softmmu"
 ENV_DIR := env
@@ -28,9 +40,9 @@ DTB ?=
 
 # xxx-softmmu for system emulation
 # xxx-linux-user for user emulation
-.PHONY: help, build_env, clean_env, build, clean, run_vm, dtb_to_dts, gdb
-
+.PHONY: help, build_env, clean_env, build, clean, run_vm, dtb_to_dts, gdb, clean
 help:
+	echo "For debugging: make run_vm DEBUG=\"-s -S\""
 
 build_env:
 	@mkdir -p $(ENV_DIR); \
@@ -60,17 +72,13 @@ clean:
 	@rm *.o bin/* build/*
 
 run_vm: $(BOOT_FILE)
-	./env/qemu-system-riscv32 \
-		-M virt,aia=aplic \
-		-cpu rv32,c=off \
-		-s -S \
-		-bios none \
-		-m maxmem=16G \
-		-smp 1,cores=1,threads=1 \
-		-accel tcg \
-		-nographic \
-		-device loader,file=./$(BOOT_FILE),addr=0x80000000 \
-		-serial mon:stdio
+		$(QEMU) $(MACHINE) \
+			$(CPUS) \
+			$(ACCEL) \
+			$(DEVICE) \
+			$(BACKEND) \
+			$(INTERFACE) \
+			$(BOOT)
 		
 gdb:
 	# For now using the -s flag in vm to automatically connect to GDB at
@@ -83,6 +91,7 @@ ifndef DTB
 	@echo "make dtb_to_dts: try 'make dtb_to_dts DTB=<dtbfile>'"
 	@exit 2
 endif
+	$(QEMU) $(MACHINE),dumpdtb=$(DTB) $(CPUS) -display none
 	@dtb_file_path=$(DTB); \
 	if [ -e "$$dtb_file_path" ]; then \
 		dtc -I dtb -O dts $$dtb_file_path -o $${dtb_file_path//dtb/dts}; \

@@ -30,14 +30,21 @@ _start:
 	/* Setting MPP to be machine mode */
 	li t0, (0x3 << 11)
 	csrs mstatus, t0
-
-	/* Jumping to main.c */
-	la t0, main
+	la t0, 2f
 	csrw mepc, t0
-
 	mret
-	.size _start, .-_start
 
 2:
+	/* Jumping to main.c */
+	jal main
+
+shutdown:
+	/* Shutdown sequence */
+	li t0, 0x100000
+	li t1, 0x5555
+	sw t1, 0(t0)
+	.size _start, .-_start
+
+3:
 	wfi
-	j 2b
+	j 3b
