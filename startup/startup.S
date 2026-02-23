@@ -5,7 +5,7 @@
 _start:
 	/* Checking HART ID, and making only the 0th core do initialization */
 	csrr t0, mhartid
-	bnez t0, 1f
+	bnez t0, 3f
 
 	/* TODO: Add multi hart logic */
 

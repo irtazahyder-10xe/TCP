@@ -86,6 +86,7 @@ void printf(const char *fmt, ...)
             }
         }
     }
+    va_end(args_p);
 }
 
 void scans(char *s)

@@ -1,7 +1,6 @@
 #include "uart.h"
 
-int main()
-{
+int main() {
     int *UART_ADDRESS = (int *) 0x10000000;
     init_uart(UART_ADDRESS);
 
