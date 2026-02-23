@@ -5,7 +5,7 @@
  *
  * @param addr MMIO address for UART
  */
-void init_uart(int *address);
+void init_uart();
 
 /**
  * @brief Transmits single character to UART
@@ -34,5 +34,6 @@ char getc();
  * NOTE: Enter key triggers \r not newline.
  * NOTE: Backspaces are not supported
  * @param s Pointer to buffer to store the string
+ * @return int Size of the string
  */
-void scans(char* s);
+int scans(char* s);

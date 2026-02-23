@@ -10,7 +10,7 @@ _start:
 	/* TODO: Add multi hart logic */
 
 	/* Initializing stack and global pointer */
-	la sp, _sstack
+	la sp, _estack
 	.option push
 	.option norelax
 	la gp, _global_pointer

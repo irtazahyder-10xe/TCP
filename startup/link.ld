@@ -21,6 +21,7 @@ SECTIONS
   .data ALIGN (0x1000) : {
     _sstack = .;
     . += 4K;
+    _estack = .;
 	  *(.data)
   }> DRAM
   .bss ALIGN (0x1000) : {

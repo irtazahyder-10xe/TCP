@@ -21,7 +21,7 @@ OBJDUMP := $(PREFIX)-objdump
 GDB := $(PREFIX)-gdb
 
 CPATH := ./include
-CFLAGS := -march=rv32g -mabi=ilp32 -g -I $(CPATH)
+CFLAGS := -march=rv32g -mabi=ilp32 -g -I $(CPATH) -Wall -Werror
 
 TARGETS := "riscv32-softmmu,riscv64-softmmu"
 ENV_DIR := env
