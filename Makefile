@@ -4,9 +4,9 @@ SHELL := /bin/bash
 QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
 QEMU_FLAGS := --cpu=x86_64 --enable-debug
 
-QEMU := ./env/qemu-system-riscv32
+QEMU := ./env/qemu-system-riscv64
 MACHINE := -M virt,aia=aplic
-CPUS := -cpu rv32,c=off -smp 1,cores=1,threads=1 -m maxmem=16G
+CPUS := -cpu rv64,c=off -smp 1,cores=1,threads=1 -m maxmem=16G
 ACCEL := -accel tcg
 DEVICE := 
 BACKEND := -serial mon:stdio
@@ -21,7 +21,12 @@ OBJDUMP := $(PREFIX)-objdump
 GDB := $(PREFIX)-gdb
 
 CPATH := ./include
-CFLAGS := -march=rv32g -mabi=ilp32 -g -I $(CPATH) -Wall -Werror
+LDFLAGS := -fdata-sections -Wl,--gc-sections
+CFLAGS := -march=rv64g -mabi=lp64 -mcmodel=medany -g -I $(CPATH) \
+	  -Wall -Werror -Wcast-align -Wconversion -Wrestrict -Wrestrict \
+	  -Wconversion -Wsign-conversion -Wshadow -Wpointer-arith -Wcast-align \
+	  -Wmissing-prototypes -g -O2 -Wimplicit-fallthrough -Wformat=2 \
+	  -Wformat-security $(LDFLAGS)
 
 TARGETS := "riscv32-softmmu,riscv64-softmmu"
 ENV_DIR := env
@@ -66,6 +71,9 @@ build: $(BOOT_FILE)
 
 clean: 
 	@rm *.o bin/* build/*
+
+disasm:
+	$(OBJDUMP) -xDt $(BOOT_FILE) > misc/boot.disasm
 
 run_vm: $(BOOT_FILE)
 		$(QEMU) $(MACHINE) \

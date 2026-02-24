@@ -1,3 +1,5 @@
+.include "startup/consts.S"
+
 	.section .text.init, "x"
 	.global _start
 	.type _start, @function
@@ -38,12 +40,24 @@ _start:
 	/* Jumping to main.c */
 	jal main
 
-shutdown:
+end:
 	/* Shutdown sequence */
-	li t0, 0x100000
-	li t1, 0x5555
+	li t0, test_dev_addr
+	bnez a0, .fail
+.pass:
+	li t1, test_dev_poweroff
+	j .exit
+.reboot:
+	li t1, test_dev_reboot
+	j .exit
+.fail:
+	/* Operates identical to the to the poweroff device */
+	/* TODO: Define pass and fail conditions */
+	li t1, test_dev_fail
+.exit:
 	sw t1, 0(t0)
 	.size _start, .-_start
+
 
 3:
 	wfi
