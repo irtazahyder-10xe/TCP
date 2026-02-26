@@ -10,31 +10,31 @@
 void init_uart()
 {
     /* Setting baud to 9600, even though this does not matter for QEMU */
-    MMIO_WRITE_BYTE(UART_ADDR, LCR, 0x80);
-    MMIO_WRITE_BYTE(UART_ADDR, DLL, 0x0c);
-    MMIO_WRITE_BYTE(UART_ADDR, DLM, 0x00);
-    MMIO_WRITE_BYTE(UART_ADDR, LCR, 0x00);
+    mmio_write_byte(UART_ADDR, LCR, 0x80);
+    mmio_write_byte(UART_ADDR, DLL, 0x0c);
+    mmio_write_byte(UART_ADDR, DLM, 0x00);
+    mmio_write_byte(UART_ADDR, LCR, 0x00);
 
     /* Configuring 8 bit UART, 1 stop bit, 0 parity */
-    MMIO_WRITE_BYTE(UART_ADDR, LCR, 0x03);
-    MMIO_WRITE_BYTE(UART_ADDR, FCR, 0x01);
+    mmio_write_byte(UART_ADDR, LCR, 0x03);
+    mmio_write_byte(UART_ADDR, FCR, 0x01);
 
     /* TODO: Change polling mechanism to interrupt based */
-    MMIO_WRITE_BYTE(UART_ADDR, IER, 0x00);
+    mmio_write_byte(UART_ADDR, IER, 0x00);
 }
 
 void putc(char c)
 {
     /* Waiting for transmitter to become emtpy */
-    while (!(MMIO_READ_BYTE(UART_ADDR, LSR) & 0x40));
-    MMIO_WRITE_BYTE(UART_ADDR, RBR, c);
+    while (!(mmio_read_byte(UART_ADDR, LSR) & 0x40));
+    mmio_write_byte(UART_ADDR, RBR, c);
 }
 
 char getc()
 {
     /* Waiting for LSR.DR to become 1 */
-    while (!(MMIO_READ_BYTE(UART_ADDR, LSR) & 0x01));
-    return (char) MMIO_READ_BYTE(UART_ADDR, THR);
+    while (!(mmio_read_byte(UART_ADDR, LSR) & 0x01));
+    return (char) mmio_read_byte(UART_ADDR, THR);
 }
 
 static void print_num(uint64_t num, size_t base, bool is_signed)

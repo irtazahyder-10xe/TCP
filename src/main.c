@@ -26,8 +26,8 @@ int main() {
     uint8_t tests_passed = 0;
 
     printf("========= Byte Read/Write Test =========\n");
-    MMIO_WRITE_BYTE((uint64_t) addr, 0, 0x07);
-    if (MMIO_READ_BYTE((uint64_t) addr, 0) != 0x07) {
+    mmio_write_byte((uintptr_t) addr, 0, 0x07);
+    if (mmio_read_byte((uintptr_t) addr, 0) != 0x07) {
         printf("FAILED: 0x%x != 0x%x\n",
                value & 0xFF,
                0x07);
@@ -38,8 +38,8 @@ int main() {
     }
 
     printf("========= Short Read/Write Test =========\n");
-    MMIO_WRITE_SHORT((uint64_t) addr, 2, 0xdead);
-    if (MMIO_READ_SHORT((uint64_t) addr, 2) != 0xdead) {
+    mmio_write_short((uintptr_t) addr, 2, 0xdead);
+    if (mmio_read_short((uintptr_t) addr, 2) != 0xdead) {
         printf("FAILED: 0x%x != 0x%x\n",
                (value & 0xFFFF0000U) >> 16,
                0xdead);
@@ -50,8 +50,8 @@ int main() {
     }
 
     printf("========= Word read/Write Test =========\n");
-    MMIO_WRITE_WORD((uint64_t) addr, 4, 0xcafebeef);
-    if (MMIO_READ_WORD((uint64_t) addr, 4) != 0xcafebeefUL) {
+    mmio_write_word((uintptr_t) addr, 4, 0xcafebeef);
+    if (mmio_read_word((uintptr_t) addr, 4) != 0xcafebeefUL) {
         printf("FAILED: 0x%x != 0x%x\n",
                (value & 0xFFFFFFFF00000000U) >> 32,
                0xcafebeefUL);
@@ -63,8 +63,8 @@ int main() {
 
 
     printf("========= Double Read/Write Test =========\n");
-    MMIO_WRITE_DOUBLE((uint64_t) addr, 0, 0xfedcba9876543210);
-    if (MMIO_READ_DOUBLE((uint64_t) addr, 0) != 0xfedcba9876543210) {
+    mmio_write_double((uintptr_t) addr, 0, 0xfedcba9876543210);
+    if (mmio_read_double((uintptr_t) addr, 0) != 0xfedcba9876543210) {
         printf("FAILED: 0x%x != 0x%x\n",
                value,
                0xfedcba9876543210);
