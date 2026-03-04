@@ -1,4 +1,4 @@
-.include "startup/consts.S"
+.include "startup/macro.S"
 
 	.section .text.init, "x"
 	.global _start
@@ -13,6 +13,7 @@ _start:
 
 	/* Initializing stack and global pointer */
 	la sp, _estack
+
 	.option push
 	.option norelax
 	la gp, _global_pointer
@@ -23,6 +24,13 @@ _start:
 	csrw mtvec, t0
 	li t0, 0x3
 	csrc mtvec, t0
+
+	/* Setting up the scratch registers */
+	la t0, _mscratch
+	csrw mscratch, t0
+
+	la t0, _sscratch
+	csrw sscratch, t0
 	
 	/* Enabling global and local interrupts */
 	li t0, MSTATUS_SIE
@@ -37,10 +45,36 @@ _start:
 	li t0, XIE_BASE
 	csrw sie, t0
 
+	/* Configuring AIA */
+	/* Interrupt register files already delcared */
+
+	/* Setting eidelivery */
+	li t0, 0x70
+	csrw miselect, t0
+	// TODO: check if the below instruction is valid
+	csrwi mireg, 1
+	// li t0, 1
+	// csrw mireg, t0
+
+	/* Setting eithreshold */
+	li t0, 0x72
+	csrw miselect, t0
+	csrwi mireg, 0
+
+	/* Setting eie[0] */
+	/* NOTE: QEMU only implements 32 irqs, hence initializing only eie[0] */
+	li t0, EIE_ADDR_START
+	li t1, EIE_ADDR_END
+	li t2, -1
+1:
+	csrw miselect, t0
+	csrw mireg, t2
+	addi t0, t0, EIE_ADDR_OFFSET
+	bltu t0, t1, 1b
+
 	/* Clearing out .bss section */
 	la t0, _bss_start
 	la t1, _bss_end
-
 1:
 	sw zero, 0(t0)
 	addi t0, t0, 4
@@ -52,11 +86,42 @@ _start:
 	la t0, 2f
 	csrw mepc, t0
 	mret
-
 2:
-	/* Jumping to main.c */
-	jal main
+	/* Initializing the uart */
+	call init_uart
 
+	/* Jumping to main.c:main */
+	call main
+	j end
+
+	/**
+	 * Trap handler wrapper function.
+	 */
+	.section .text
+	.global trap_handler
+	.type trap_handler, @function
+	.option norvc
+trap_handler:
+	PUSH_ALL mscratch
+	csrr a0, mcause
+	csrr a1, mstatus
+	csrr a2, mepc
+
+	call c_trap_handler
+	csrw mepc, a0
+
+	POP_ALL mscratch
+
+	mret
+	.size trap_handler, .-trap_handler
+
+	/**
+	 * Device termination routine
+	 */
+	.section .text.init
+	.global end
+	.type end, @function
+	.option norvc
 end:
 	/* Shutdown sequence */
 	li t0, test_dev_addr
@@ -74,7 +139,6 @@ end:
 .exit:
 	sw t1, 0(t0)
 	.size _start, .-_start
-
 
 3:
 	wfi

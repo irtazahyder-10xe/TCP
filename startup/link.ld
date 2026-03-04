@@ -31,4 +31,10 @@ SECTIONS
     . = ALIGN (0x8);
     _bss_end = .;
   }> DRAM
+  .scratch : ALIGN(0x1000) {
+    _mscratch = .;
+    . += (32 * 64);
+    _sscratch = .;
+    . += (32 * 64);
+  }> DRAM
 }
