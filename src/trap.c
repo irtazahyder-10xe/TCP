@@ -3,11 +3,30 @@
 
 #include "uart.h"
 
+typedef enum EIIMode {
+    S = 9,
+    VS = 10,
+    M = 11
+} EIIMode;
+
 uintptr_t *c_trap_handler(uint64_t mcause, uint64_t mstatus, uintptr_t *mepc);
 
-static void external_interrupt_handler()
+static void external_interrupt_handler(EIIMode exp_code)
 {
     // TODO: Program seperate interrupt handling routines for M, S, VS
+    printf("MODE: ");
+    switch (exp_code) {
+    case S:
+            printf("Supervisor\n");
+            break;
+    case VS:
+            printf("Virtual Supervisor\n");
+            break;
+    case M:
+            printf("Machine\n");
+            break;
+    }
+
     // Make this function call to those seperate routines, as the exit method is same
     /* Fetching the eiid of the external interrupt */
     /* NOTE: Write to mtopei automatically clears the interrupt pending bit */
@@ -40,7 +59,7 @@ uintptr_t *c_trap_handler(uint64_t mcause, uint64_t mstatus, uintptr_t *mepc)
     //        exp_code);
 
     if (is_interrupt && (9 <= exp_code && exp_code <= 11))
-        external_interrupt_handler();
+        external_interrupt_handler((EIIMode) exp_code);
     else if (!is_interrupt)
         exception_handler(exp_code, mstatus, mepc);
     return mepc;
