@@ -18,7 +18,24 @@ _start:
 	la gp, _global_pointer
 	.option pop
 
-	/* TODO: Initialize mtvec */
+	/* Initialize trap handler, and using direct mode */
+	la t0, trap_handler
+	csrw mtvec, t0
+	li t0, 0x3
+	csrc mtvec, t0
+	
+	/* Enabling global and local interrupts */
+	li t0, MSTATUS_SIE
+	ori t0, t0, MSTATUS_SPIE
+	ori t0, t0, MSTATUS_MIE
+	ori t0, t0, MSTATUS_MPIE
+	csrs mstatus, t0
+
+	li t0, XIE_BASE
+	csrw mie, t0
+
+	li t0, XIE_BASE
+	csrw sie, t0
 
 	/* Clearing out .bss section */
 	la t0, _bss_start

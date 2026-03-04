@@ -5,7 +5,7 @@ QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
 QEMU_FLAGS := --cpu=x86_64 --enable-debug
 
 QEMU := ./env/qemu-system-riscv64
-MACHINE := -M virt,aia=aplic
+MACHINE := -M virt,aia=aplic-imsic
 CPUS := -cpu rv64,c=off -smp 1,cores=1,threads=1 -m maxmem=16G
 ACCEL := -accel tcg
 DEVICE := 
