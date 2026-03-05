@@ -1,80 +1,44 @@
 #include <stdint.h>
 
-#include "mmio.h"
 #include "uart.h"
+#include "aplic.h"
 
-int main() {
+void change_privilege(uint8_t priv_mode);
 
-    init_uart();
+int main()
+{
     uint8_t exit_status = 0;
-    /* Testing output monitor */
-    for (int i = -1; i < 2; i++) {
-        int *p = &i;
-        printf("String: %s\nDecimal: %d\nHex: 0x%x\nUnsigned: %u\nPointer: 0x%p (has value %d)\n",
-               "Hello World",
-               i,
-               i,
-               i,
-               p, *p);
-        printf("---------------\n");
-    }
+    aplic_init(32);
 
-    printf("\n========= Memory Read/Write Test =========\n");
-    uint64_t value = 0xdeadcafebeefface;
-    uint64_t *addr = &value;
-    const uint8_t tests = 4;
-    uint8_t tests_passed = 0;
+    /* Generating single interrupt using APLIC */
+    printf("\n========= SINGLE INTERRUPT TEST =========\n");
+    aplic_send_msi(2, 0, 0, 15);
 
-    printf("========= Byte Read/Write Test =========\n");
-    mmio_write_byte((uintptr_t) addr, 0, 0x07);
-    if (mmio_read_byte((uintptr_t) addr, 0) != 0x07) {
-        printf("FAILED: 0x%x != 0x%x\n",
-               value & 0xFF,
-               0x07);
-        exit_status = 1;
-    } else {
-        printf("PASSED\n");
-        tests_passed++;
-    }
+    /* Generating multiple interrupts based on bit mask */
+    printf("\n========= MULTIPLE INTERRUPT TEST =========\n");
+    aplic_send_Nmsi(0, 0, 0, 0xF000000E);
 
-    printf("========= Short Read/Write Test =========\n");
-    mmio_write_short((uintptr_t) addr, 2, 0xdead);
-    if (mmio_read_short((uintptr_t) addr, 2) != 0xdead) {
-        printf("FAILED: 0x%x != 0x%x\n",
-               (value & 0xFFFF0000U) >> 16,
-               0xdead);
-        exit_status = 1;
-    } else {
-        printf("PASSED\n");
-        tests_passed++;
-    }
+    /* Delegation Test */
+    printf("\n========= DELEGATION TEST =========\n");
+    aplic_conf_sourcecfg(ROOT_MINTR_DOMAIN, 4, 1, 0);
+    aplic_conf_sourcecfg(C0_SINTR_DOMAIN, 4, 0, APLIC_SOURCECFG_SM_DETACH);
 
-    printf("========= Word read/Write Test =========\n");
-    mmio_write_word((uintptr_t) addr, 4, 0xcafebeef);
-    if (mmio_read_word((uintptr_t) addr, 4) != 0xcafebeefUL) {
-        printf("FAILED: 0x%x != 0x%x\n",
-               (value & 0xFFFFFFFF00000000U) >> 32,
-               0xcafebeefUL);
-        exit_status = 1;
-    } else {
-        printf("PASSED\n");
-        tests_passed++;
-    }
+    /* Going to supervisor mode */
+    change_privilege(0x01);
 
+    // __asm__ volatile ("ecall");
 
-    printf("========= Double Read/Write Test =========\n");
-    mmio_write_double((uintptr_t) addr, 0, 0xfedcba9876543210);
-    if (mmio_read_double((uintptr_t) addr, 0) != 0xfedcba9876543210) {
-        printf("FAILED: 0x%x != 0x%x\n",
-               value,
-               0xfedcba9876543210);
-        exit_status = 1;
-    } else {
-        printf("PASSED\n");
-        tests_passed++;
-    }
+    aplic_send_msi(4, 0, 0, 15);
 
-    printf("Tests %d/%d passed", tests_passed, tests);
+    printf("Program exited!");
 
     return exit_status;
+}
+
+void change_privilege(uint8_t priv_mode)
+{
+    __asm__ volatile ("mv a0, %0 \n\t" 
+                      "call priv_change \n\t"
+                      ::"r" (priv_mode): "a0"
+                      );
 }
