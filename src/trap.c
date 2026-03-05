@@ -32,9 +32,7 @@ static void external_interrupt_handler(EIIMode exp_code)
     /* NOTE: Write to mtopei automatically clears the interrupt pending bit */
     uint64_t eiid = 0;
     __asm__ volatile ("csrrw %0, mtopei, zero \n\t"
-                      : "=r" (eiid)
-                      :
-                      );
+                      : "=r" (eiid):);
     eiid >>= 16;
     printf("--------------------\nMinor identity: %d\n--------------------\n", eiid);
 }
@@ -44,8 +42,10 @@ static void exception_handler(uint64_t exp_code, uint64_t mstatus, uint64_t *mep
     printf("\n===========\n%s\nmcause: %d\n===========\n",
            "Exception",
            exp_code);
-    *(mepc) += 8;
-    // TODO: If changes required to mstatus, do it using inline asm
+    /* Shutdown device if an exception takes place */
+    __asm__ volatile ("li a0, 1\n\t"
+                      "j end"
+                      ::: "a0");
 }
 
 uintptr_t *c_trap_handler(uint64_t mcause, uint64_t mstatus, uintptr_t *mepc)

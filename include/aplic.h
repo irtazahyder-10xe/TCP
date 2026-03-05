@@ -4,8 +4,8 @@
 #define MACHINE_IF_ADDR 0x24000000
 #define SUPERVISOR_IF_ADDR 0x28000000
 
-#define M_INTR_DOMAIN 0xC000000
-#define S_INTR_DOMAIN 0xD000000
+#define ROOT_MINTR_DOMAIN 0xC000000
+#define C0_SINTR_DOMAIN 0xD000000
 
 #define APLIC_DOMAINCFG                0x0000
 #define APLIC_DOMAINCFG_RDONLY         0x80000000
@@ -40,10 +40,10 @@
 #define APLIC_TARGET_IPRIO_MASK        0xff
 #define APLIC_TARGET_EIID_MASK         0x7ff
 
-void aplic_init(uintptr_t aplic_addr, uint16_t intr_src_count);
+void aplic_init(uint16_t intr_src_count);
 
-void aplic_send_msi(uintptr_t intr_domain, uint16_t intr_src, uint16_t hart_index, uint8_t guest_index, uint16_t eiid);
-void aplic_send_Nmsi(uintptr_t intr_domain, uint16_t intr_src, uint16_t hart_index, uint8_t guest_index, uint32_t bit_mask);
+void aplic_send_msi(uint16_t intr_src, uint16_t hart_index, uint8_t guest_index, uint16_t eiid);
+void aplic_send_Nmsi(uint16_t intr_src, uint16_t hart_index, uint8_t guest_index, uint32_t bit_mask);
 
 void aplic_conf_sourcecfg(uintptr_t intr_domain, uint16_t intr_src, bool D, uint16_t child_index_or_sm);
 

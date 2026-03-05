@@ -80,16 +80,21 @@ _start:
 	addi t0, t0, 4
 	bltu t0, t1, 1b
 
-	/* Setting MPP to be machine mode */
-	li t0, (0x3 << 11)
-	csrs mstatus, t0
-	la t0, 2f
-	csrw mepc, t0
-	mret
 2:
+	/* Configuring PMP */
+	la t0, _mscratch
+	srli t0, t0, 2
+	li t1, 0x003FFFFFFFFFFF
+	and t0, t0, t1
+	csrw pmpaddr0, t0
+
+	li t0, 0x0F
+	csrs pmpcfg0, t0
+
 	/* Initializing the uart */
 	call init_uart
 
+	/* By default we execute everything in machine mode */
 	/* Jumping to main.c:main */
 	call main
 	j end
@@ -114,6 +119,27 @@ trap_handler:
 
 	mret
 	.size trap_handler, .-trap_handler
+
+	/**
+	 * Change privilege
+	 *
+	 * param a0 new privilege mode
+	 */
+	.section .text
+	.global priv_change
+	.type priv_change, @function
+	.option norvc
+priv_change:
+	andi a0, a0, 0x3
+	slli a0, a0, 11
+
+	li t0, (3 << 11)
+	csrc mstatus, t0
+	csrs mstatus, a0
+
+	csrw mepc, ra
+	mret
+	.size priv_change, .-priv_change
 
 	/**
 	 * Device termination routine
