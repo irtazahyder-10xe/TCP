@@ -48,18 +48,25 @@ _start:
 	/* Configuring AIA */
 	/* Interrupt register files already delcared */
 
+	/* Setting Machine IF */
 	/* Setting eidelivery */
 	li t0, 0x70
 	csrw miselect, t0
-	// TODO: check if the below instruction is valid
 	csrwi mireg, 1
-	// li t0, 1
-	// csrw mireg, t0
 
 	/* Setting eithreshold */
 	li t0, 0x72
 	csrw miselect, t0
 	csrwi mireg, 0
+
+	/* Setting Supervisor IF */
+	li t0, 0x70
+	csrw siselect, t0
+	csrwi sireg, 1
+
+	li t0, 0x72
+	csrw siselect, t0
+	csrwi sireg, 0
 
 	/* Setting eie[0] */
 	/* NOTE: QEMU only implements 32 irqs, hence initializing only eie[0] */
@@ -69,6 +76,10 @@ _start:
 1:
 	csrw miselect, t0
 	csrw mireg, t2
+	
+	csrw siselect, t0
+	csrw sireg, t2
+
 	addi t0, t0, EIE_ADDR_OFFSET
 	bltu t0, t1, 1b
 

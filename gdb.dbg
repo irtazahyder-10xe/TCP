@@ -1,4 +1,0 @@
-break src/main.c:21
-break src/main.c:22
-break src/main.c:30
-break *(0x80001358)

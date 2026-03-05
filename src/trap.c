@@ -14,25 +14,28 @@ uintptr_t *c_trap_handler(uint64_t mcause, uint64_t mstatus, uintptr_t *mepc);
 static void external_interrupt_handler(EIIMode exp_code)
 {
     // TODO: Program seperate interrupt handling routines for M, S, VS
+    uint64_t eiid = 0;
     printf("MODE: ");
     switch (exp_code) {
     case S:
             printf("Supervisor\n");
+            __asm__ volatile ("csrrw %0, stopei, zero \n\t"
+                              : "=r" (eiid):);
             break;
     case VS:
             printf("Virtual Supervisor\n");
+            __asm__ volatile ("csrrw %0, vstopei, zero \n\t"
+                              : "=r" (eiid):);
             break;
     case M:
             printf("Machine\n");
+            __asm__ volatile ("csrrw %0, mtopei, zero \n\t"
+                              : "=r" (eiid):);
             break;
     }
 
-    // Make this function call to those seperate routines, as the exit method is same
     /* Fetching the eiid of the external interrupt */
     /* NOTE: Write to mtopei automatically clears the interrupt pending bit */
-    uint64_t eiid = 0;
-    __asm__ volatile ("csrrw %0, mtopei, zero \n\t"
-                      : "=r" (eiid):);
     eiid >>= 16;
     printf("--------------------\nMinor identity: %d\n--------------------\n", eiid);
 }
