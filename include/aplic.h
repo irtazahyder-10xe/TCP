@@ -4,8 +4,8 @@
 #define MACHINE_IF_ADDR 0x24000000
 #define SUPERVISOR_IF_ADDR 0x28000000
 
-#define ROOT_MINTR_DOMAIN 0xC000000
-#define C0_SINTR_DOMAIN 0xD000000
+#define ROOT_MIRQ_DOMAIN 0xC000000
+#define C0_SIRQ_DOMAIN 0xD000000
 
 #define APLIC_DOMAINCFG                0x0000
 #define APLIC_DOMAINCFG_RDONLY         0x80000000
@@ -39,6 +39,8 @@
 #define APLIC_TARGET_GUEST_IDX_MASK    0x3f
 #define APLIC_TARGET_IPRIO_MASK        0xff
 #define APLIC_TARGET_EIID_MASK         0x7ff
+
+#define MAX_IRQ_SRC                    0x60
 
 void aplic_init(uint16_t intr_src_count);
 

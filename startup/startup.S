@@ -105,7 +105,10 @@ _start:
 	/* Initializing the uart */
 	call init_uart
 
-	/* By default we execute everything in machine mode */
+	/* By default we execute everything in supervisor mode */
+	li a0, 1
+	call priv_change
+
 	/* Jumping to main.c:main */
 	call main
 	j end

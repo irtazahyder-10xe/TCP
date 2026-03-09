@@ -19,19 +19,19 @@ int main()
     aplic_send_Nmsi(0, 0, 0, 0xF000000E);
 
     /* Delegation Test */
-    printf("\n========= DELEGATION TEST =========\n");
-    aplic_conf_sourcecfg(ROOT_MINTR_DOMAIN, 4, 1, 0);
-    aplic_conf_sourcecfg(C0_SINTR_DOMAIN, 4, 0, APLIC_SOURCECFG_SM_DETACH);
-
-    /* Going to supervisor mode */
-    change_privilege(0x01);
-
-    // __asm__ volatile ("ecall");
-
-    aplic_send_msi(4, 0, 0, 15);
-
-    printf("Program exited!");
-
+//     printf("\n========= DELEGATION TEST =========\n");
+//     aplic_conf_sourcecfg(ROOT_MINTR_DOMAIN, 4, 1, 0);
+//     aplic_conf_sourcecfg(C0_SINTR_DOMAIN, 4, 0, APLIC_SOURCECFG_SM_DETACH);
+// 
+//     /* Going to supervisor mode */
+//     // change_privilege(0x01);
+// 
+//     // __asm__ volatile ("ecall");
+// 
+//     aplic_send_msi(4, 0, 0, 15);
+// 
+//     printf("Program exited!");
+// 
     return exit_status;
 }
 
