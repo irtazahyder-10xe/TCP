@@ -5,7 +5,8 @@ QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
 QEMU_FLAGS := --cpu=x86_64 --enable-debug
 
 QEMU := ./env/qemu-system-riscv64
-DOMAIN_CFG := domain-count=5,domain-mode=M_M_S_S_S,domain-parent=-1_0_0_1_1
+# DOMAIN_CFG := domain-count=5,domain-mode=M_M_S_S_S,domain-parent=-1_0_0_1_1
+DOMAIN_CFG := domain-count=2,domain-mode=M_M,domain-parent=-1_0
 MACHINE := -M virt,aia=aplic-imsic
 ifeq ($(IDM_TEST),true)
 	MACHINE := $(MACHINE),$(DOMAIN_CFG)

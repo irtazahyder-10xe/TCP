@@ -12,8 +12,13 @@
 
 uintptr_t irq_domain_table[IRQ_DOMAINS] = {
     ROOT_MIRQ_DOMAIN,
-    C1_SIRQ_DOMAIN
+    C0_MIRQ_DOMAIN
 };
+
+// uintptr_t irq_domain_table[IRQ_DOMAINS] = {
+//     ROOT_MIRQ_DOMAIN,
+//     C1_SIRQ_DOMAIN
+// };
 
 /* #define IRQ_DOMAINS 5
 

@@ -19,14 +19,14 @@ int main()
 
     printf("\n========= DELEGATION TEST =========\n");
     aplic_conf_sourcecfg(4, ROOT_MIRQ_DOMAIN, 0, true);
-    aplic_conf_sourcecfg(4, C1_SIRQ_DOMAIN, APLIC_SOURCECFG_SM_DETACH, false);
+    aplic_conf_sourcecfg(4, C0_MIRQ_DOMAIN, APLIC_SOURCECFG_SM_DETACH, false);
 
     printf("\n========= SINGLE INTERRUPT TEST =========\n");
     aplic_send_msi(4, 0, 0, 15);
 
     printf("\n========= MULTIPLE INTERRUPT TEST =========\n");
-    aplic_Nirq_delegate(30, 10, C1_SIRQ_DOMAIN, 0);
-    aplic_in_clrie(C1_SIRQ_DOMAIN, 1, 0x0000000F);
+    aplic_Nirq_delegate(30, 10, C0_MIRQ_DOMAIN, 0);
+    aplic_in_clrie(C0_MIRQ_DOMAIN, 1, 0x0000000F);
 
     aplic_send_Nmsi(30, 10, 0, 0);
 
