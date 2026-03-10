@@ -16,7 +16,9 @@
 .equ XIE_BASE, (7 << 9)
 
 .equ EIE_ADDR_START, 0xC0
-.equ EIE_ADDR_END, 0xC2
+.equ IRQ_SRC_MAX, 96
+.equ EIE_ADDR_END, EIE_ADDR_START + (IRQ_SRC_MAX >> 6)
+
 /* NOTE: For RV64 only even number eie & eip registers are configured */
 .equ EIE_ADDR_OFFSET, 0x2
 

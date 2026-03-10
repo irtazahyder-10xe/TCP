@@ -68,8 +68,7 @@ _start:
 	csrw siselect, t0
 	csrwi sireg, 0
 
-	/* Setting eie[0] */
-	/* NOTE: QEMU only implements 32 irqs, hence initializing only eie[0] */
+	/* Initializing interrupt file eie CSRs*/
 	li t0, EIE_ADDR_START
 	li t1, EIE_ADDR_END
 	li t2, -1
@@ -108,6 +107,10 @@ _start:
 	/* By default we execute everything in supervisor mode */
 	li a0, 1
 	call priv_change
+
+	/* Initialzing APLIC */
+	li a0, 0x60
+	call aplic_init
 
 	/* Jumping to main.c:main */
 	call main

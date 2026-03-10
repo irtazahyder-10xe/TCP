@@ -8,7 +8,6 @@ void change_privilege(uint8_t priv_mode);
 int main()
 {
     uint8_t exit_status = 0;
-    aplic_init(IRQ_SRC_MAX);
 
     // __asm__ volatile ("ecall");
 

@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "uart.h"
 #define NULL 0
 
 /* Limit of IRQ_DOMAINS is the same as IRQ_DOMAINS_PER_SOCKET in hw/riscv/virt.h */
@@ -209,8 +210,7 @@ void aplic_Nirq_delegate(uint32_t base_irq_src, uint32_t irq_count,
 
     /**
      * Updating setie for new source irq_domain
-     * Only sources with valid sourcecfg registers get configured in
-     * setie.
+     * Only sources with valid sourcecfg registers get configured in setie.
      */
     while ((base_irq_src < max_irq_src) && (base_irq_src < IRQ_SRC_MAX)) {
         aplic_setie(irq_domain, base_irq_src >> 5, 0xFFFFFFFF);
