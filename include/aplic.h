@@ -1,15 +1,32 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+/**
+ * @name IMSIC Interrupt File addresses
+ * @{
+ */
 #define MACHINE_IF_ADDR 0x24000000
 #define SUPERVISOR_IF_ADDR 0x28000000
+/** @} */
 
+/**
+ * @name APLIC Interrupt Domain addresses
+ * @note These are subjected to change when using different domain
+ * configurations
+ * @{
+ */
 #define ROOT_MIRQ_DOMAIN 0xc000000
 #define C0_MIRQ_DOMAIN ROOT_MIRQ_DOMAIN + 0x8000
 #define C1_SIRQ_DOMAIN 0xd000000
 #define C2_SIRQ_DOMAIN C1_SIRQ_DOMAIN + 0x8000
 #define C3_SIRQ_DOMAIN C2_SIRQ_DOMAIN + 0x8000
+/** @} */
 
+/**
+ * @name APLIC Configuration Macros
+ * APLIC MMR offsets, default values, and masks
+ * @{
+ */
 #define APLIC_DOMAINCFG                0x0000
 #define APLIC_DOMAINCFG_RDONLY         0x80000000
 #define APLIC_DOMAINCFG_IE             (1 << 8)
@@ -42,24 +59,92 @@
 #define APLIC_TARGET_GUEST_IDX_MASK    0x3f
 #define APLIC_TARGET_IPRIO_MASK        0xff
 #define APLIC_TARGET_EIID_MASK         0x7ff
+/** @} */
 
+/**
+ * @name Maximum IRQ Sources based on QEMU
+ */
 #define IRQ_SRC_MAX                    0x60
 
-void aplic_init(uint16_t irq_src_count);
+/**
+ * @brief Initialize N irq sources for aplic
+ *
+ * @param irq_src_count Number of irq sources to initialize
+ */
+void aplic_init(uint32_t irq_src_count);
 
-void aplic_send_msi(uint16_t irq_src, uint16_t hart_index,
-                    uint8_t guest_index, uint16_t eiid);
+/**
+ * @brief Send irq_src as MSI to delegated IMSIC
+ *
+ * @param irq_src Interrupt source number
+ * @param hart_index Target hart id
+ * @param guest_index If hypervisor implemented, the target guest interrupt
+ *                    file
+ * @param eiid target[i] registers external interrupt ID shown when interrupt
+ *             serviced.
+ */
+void aplic_send_msi(uint32_t irq_src, uint32_t hart_index,
+                    uint32_t guest_index, uint32_t eiid);
 
-void aplic_send_Nmsi(uint16_t base_irq_src, uint16_t irq_count,
-                     uint16_t hart_index, uint8_t guest_index);
+/**
+ * @brief Send N irq_src as MSI to delegated IMSIC
+ *
+ * @param base_irq_src Base interrupt source number
+ * @param irq_count Number of interrupt requests to send. Interrupts in range
+ *                  [base_irq_src, base_irq_src + irq_count) are sent as MSIs
+ * @param hart_index Target hart id
+ * @param guest_index If hypervisor implemented, the target guest interrupt
+ *                    file
+ *
+ * @note eiid will be the same as the interrupt source number.
+ */
+void aplic_send_Nmsi(uint32_t base_irq_src, uint32_t irq_count,
+                     uint32_t hart_index, uint32_t guest_index);
 
-void aplic_conf_sourcecfg(uintptr_t irq_domain, uint16_t irq_src,
-                          bool D, uint16_t child_index_or_sm);
+/**
+ * @brief Modify sourcecfg register for irq_src in irq_domain
+ *
+ * @param irq_src Base interrupt source number
+ * @param irq_domain Interrupt Domain address
+ * @param child_index_or_sm If D is true, field is read as child_index
+ *                          of the interrupt domain irq is to be delegated.
+ *                          If D is false, field is read as source_mode.
+ * @param D Delegate interrupt
+ *
+ * @note eiid will be the same as the interrupt source number.
+ */
+void aplic_conf_sourcecfg(uint32_t irq_src, uintptr_t irq_domain,
+                          uint32_t child_index_or_sm, bool D);
 
-void aplic_Nirq_delegate(uintptr_t irq_domain, uint16_t base_irq_src,
-                        uint16_t irq_count, uint16_t child_index);
+/**
+ * @brief Delegate N interrupts to child domain "child_index"
+ *
+ * @param base_irq_src Base interrupt source number
+ * @param irq_count Number of interrupt requests to send. Interrupts in range
+ *                  [base_irq_src, base_irq_src + irq_count) are sent as MSIs
+ * @param irq_domain Interrupt Domain address
+ * @param child_index Child_index of the interrupt domain irq is to be delegated
+ * @param D Delegate interrupt
+ *
+ * @note eiid will be the same as the interrupt source number.
+ */
+void aplic_Nirq_delegate(uint32_t base_irq_src, uint32_t irq_count,
+                         uintptr_t irq_domain, uint32_t child_index);
 
-void aplic_setie(uintptr_t irq_domain, uint8_t k, uint32_t bit_mask);
+/**
+ * @brief Enables interrupt in irq_domain based on bit_mask
+ *
+ * @param irq_domain Interrupt Domain address
+ * @param k Index of setie[k] MMR to set
+ * @param bit_mask 32-bit mask to set the 32 bit MMR setie[k]
+ */
+void aplic_setie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask);
 
-void aplic_in_clrie(uintptr_t irq_domain, uint8_t k, uint32_t bit_mask);
-
+/**
+ * @brief Disables interrupt in irq_domain based on bit_mask
+ *
+ * @param irq_domain Interrupt Domain address
+ * @param k Index of clrie[k] MMR to set
+ * @param bit_mask 32-bit mask to set the 32 bit MMR clrie[k]
+ */
+void aplic_in_clrie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask);

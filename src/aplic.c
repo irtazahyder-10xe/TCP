@@ -24,13 +24,14 @@ uintptr_t irq_domain_table[IRQ_DOMAINS] = {
 };
 */
 
-static uintptr_t src_irq_domain(uint16_t irq_src)
+static uintptr_t src_irq_domain(uint32_t irq_src)
 {
     uint32_t *sourcecfg;
     bool D;
     uint8_t domain_idx = 0;
     do {
-        sourcecfg = (uint32_t *) (irq_domain_table[domain_idx] + APLIC_SOURCECFG_BASE);
+        sourcecfg = (uint32_t *) (irq_domain_table[domain_idx] +
+                                  APLIC_SOURCECFG_BASE);
         sourcecfg += irq_src - 1;
         D = !!(*sourcecfg & APLIC_SOURCECFG_D);
     } while (D && (++domain_idx < IRQ_DOMAINS));
@@ -38,7 +39,7 @@ static uintptr_t src_irq_domain(uint16_t irq_src)
     return (domain_idx < IRQ_DOMAINS) ? irq_domain_table[domain_idx] : NULL;
 }
 
-void aplic_init(uint16_t irq_src_count)
+void aplic_init(uint32_t irq_src_count)
 {
     /* ============ ROOT DOMAIN SETTINGS ============ */
     /* Setting mmsiaddrcfg & mmsiaddrcfgh */
@@ -76,8 +77,8 @@ void aplic_init(uint16_t irq_src_count)
     }
 }
 
-void aplic_send_msi(uint16_t irq_src, uint16_t hart_index,
-                    uint8_t guest_index, uint16_t eiid)
+void aplic_send_msi(uint32_t irq_src, uint32_t hart_index,
+                    uint32_t guest_index, uint32_t eiid)
 {
     if (irq_src == 0) {
         return;
@@ -96,18 +97,18 @@ void aplic_send_msi(uint16_t irq_src, uint16_t hart_index,
     eiid &= 0x7FFUL;
 
 
-    target += (irq_src - 1);
-    *target = (uint32_t) hart_index << APLIC_TARGET_HART_IDX_SHIFT;
-    *target |= ((uint32_t) guest_index << APLIC_TARGET_GUEST_IDX_SHIFT);
-    *target |= (uint32_t) eiid;
+    target += irq_src - 1;
+    *target = hart_index << APLIC_TARGET_HART_IDX_SHIFT;
+    *target |= guest_index << APLIC_TARGET_GUEST_IDX_SHIFT;
+    *target |= eiid;
 
     *setipnum = (uint32_t) irq_src;
 }
 
-void aplic_send_Nmsi(uint16_t base_irq_src, uint16_t irq_count,
-                     uint16_t hart_index, uint8_t guest_index)
+void aplic_send_Nmsi(uint32_t base_irq_src, uint32_t irq_count,
+                     uint32_t hart_index, uint32_t guest_index)
 {
-    if (base_irq_src >= IRQ_SRC_MAX) {
+    if (base_irq_src >= IRQ_SRC_MAX || !base_irq_src) {
         return;
     }
 
@@ -118,17 +119,17 @@ void aplic_send_Nmsi(uint16_t base_irq_src, uint16_t irq_count,
 
     uint32_t *target = (uint32_t *) (irq_domain_addr + APLIC_TARGET_BASE);
     uint32_t *setip = (uint32_t *) (irq_domain_addr + APLIC_SETIP_BASE);
-    uint16_t max_irq_src = base_irq_src + irq_count;
-    uint16_t index;
+    uint32_t max_irq_src = base_irq_src + irq_count;
+    uint32_t index;
     uint32_t bit_mask;
 
     hart_index &= 0x3FFFUL;
     guest_index &= 0x3FUL;
 
-    target += (base_irq_src - 1);
-    for (int i = base_irq_src; (i < max_irq_src) && (i < IRQ_SRC_MAX); i++) {
-            *target = (uint32_t) hart_index << APLIC_TARGET_HART_IDX_SHIFT;
-            *target |= (uint32_t) (guest_index << APLIC_TARGET_GUEST_IDX_SHIFT);
+    target += base_irq_src - 1;
+    for (uint32_t i = base_irq_src; (i < max_irq_src) && (i < IRQ_SRC_MAX); i++) {
+            *target = hart_index << APLIC_TARGET_HART_IDX_SHIFT;
+            *target |= guest_index << APLIC_TARGET_GUEST_IDX_SHIFT;
             // Setting EID to value of the interrupt generated
             *target |= (uint32_t) (i);
             target++;
@@ -143,14 +144,18 @@ void aplic_send_Nmsi(uint16_t base_irq_src, uint16_t irq_count,
         }
         *setip = bit_mask;
 
-        base_irq_src += (uint16_t) (32 - index);
+        base_irq_src += 32 - index;
         setip++;
     } while (base_irq_src < max_irq_src);
 }
 
-void aplic_conf_sourcecfg(uintptr_t irq_domain, uint16_t irq_src,
-                          bool D, uint16_t child_index_or_sm)
+void aplic_conf_sourcecfg(uint32_t irq_src, uintptr_t irq_domain,
+                          uint32_t child_index_or_sm, bool D)
 {
+    if (!irq_src) {
+        return;
+    }
+
     /* As sourcecfg MMRs have 1st interrupt at address 0, and irq_src > 0 */
     irq_src--;
 
@@ -160,17 +165,17 @@ void aplic_conf_sourcecfg(uintptr_t irq_domain, uint16_t irq_src,
 
     /* As we are using MSI, SM either detached or inactive */
     if (D) {
-        *sourcecfg |= (uint32_t) APLIC_SOURCECFG_D;
-        *sourcecfg |= (uint32_t) (child_index_or_sm & APLIC_SOURCECFG_CHILDIDX_MASK);
+        *sourcecfg |= APLIC_SOURCECFG_D;
+        *sourcecfg |= child_index_or_sm & APLIC_SOURCECFG_CHILDIDX_MASK;
     } else {
-        *sourcecfg |= (uint32_t) (child_index_or_sm & APLIC_SOURCECFG_SM_MASK);
+        *sourcecfg |= child_index_or_sm & APLIC_SOURCECFG_SM_MASK;
         /* Updating setie for new source irq_domain */
-         aplic_setie(irq_domain, (uint8_t) (irq_src / 32), 0xFFFFFFFF);
+         aplic_setie(irq_domain, irq_src >> 5, 0xFFFFFFFF);
     }
 }
 
-void aplic_Nirq_delegate(uintptr_t irq_domain, uint16_t base_irq_src,
-                        uint16_t irq_count, uint16_t child_index)
+void aplic_Nirq_delegate(uint32_t base_irq_src, uint32_t irq_count,
+                         uintptr_t irq_domain, uint32_t child_index)
 {
     if (!base_irq_src) {
         return;
@@ -178,26 +183,28 @@ void aplic_Nirq_delegate(uintptr_t irq_domain, uint16_t base_irq_src,
 
     /**
      * This only works for immediate irq_domains (i.e. direct parent and child)
-     * TODO: Make logic more generalized.
      *
-     * As sourcecfg MMRs have 1st interrupt at address 0, and irq_src > 0
+     * sourcecfg MMRs have 1st interrupt at address 0, and irq_src > 0 hence
+     * requied to base_irq_src - 1 to find required sourcecfg MMR address
      */
-    uint16_t max_irq_src = base_irq_src + irq_count;
-    uint32_t *parent_srccfg = (uint32_t *) src_irq_domain(base_irq_src);
-    parent_srccfg += base_irq_src - 1;
+    uint32_t max_irq_src = base_irq_src + irq_count - 1;
+    uint32_t *parent_srccfg_addr = (uint32_t *) (src_irq_domain(base_irq_src)
+                                                 + APLIC_SOURCECFG_BASE);
+    if (!parent_srccfg_addr) {
+        return;
+    }
 
-    uint32_t *child_srccfg = (uint32_t *) (irq_domain + APLIC_SOURCECFG_BASE);
-    child_srccfg += base_irq_src - 1;
+    parent_srccfg_addr += base_irq_src - 1;
+
+    uint32_t *child_srccfg_addr = (uint32_t *) (irq_domain + APLIC_SOURCECFG_BASE);
+    child_srccfg_addr += base_irq_src - 1;
 
     for (int i = 0; i < irq_count; i++) {
-        *parent_srccfg = 0;
-        *parent_srccfg |= (uint32_t) APLIC_SOURCECFG_D;
-        *parent_srccfg |= (uint32_t) (child_index & APLIC_SOURCECFG_CHILDIDX_MASK);
+        *(parent_srccfg_addr + i) = 0;
+        *(parent_srccfg_addr + i) |= APLIC_SOURCECFG_D;
+        *(parent_srccfg_addr + i) |= child_index & APLIC_SOURCECFG_CHILDIDX_MASK;
 
-        *child_srccfg = APLIC_SOURCECFG_SM_DETACH;
-
-        parent_srccfg++;
-        child_srccfg++;
+        *(child_srccfg_addr + i) = APLIC_SOURCECFG_SM_DETACH;
     }
 
     /**
@@ -206,19 +213,19 @@ void aplic_Nirq_delegate(uintptr_t irq_domain, uint16_t base_irq_src,
      * setie.
      */
     while ((base_irq_src < max_irq_src) && (base_irq_src < IRQ_SRC_MAX)) {
-        aplic_setie(irq_domain, (uint8_t) (base_irq_src >> 5), 0xFFFFFFFF);
-        base_irq_src += (uint16_t) (32 - (base_irq_src % 32));
+        aplic_setie(irq_domain, base_irq_src >> 5, 0xFFFFFFFF);
+        base_irq_src += 32 - (base_irq_src % 32);
     }
 }
 
-void aplic_setie(uintptr_t irq_domain, uint8_t k, uint32_t bit_mask)
+void aplic_setie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask)
 {
     uint32_t *setie = (uint32_t *) (irq_domain + APLIC_SETIE_BASE);
     setie += k;
     *setie = bit_mask;
 }
 
-void aplic_in_clrie(uintptr_t irq_domain, uint8_t k, uint32_t bit_mask)
+void aplic_in_clrie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask)
 {
     uint32_t *clrie = (uint32_t *) (irq_domain + APLIC_CLRIE_BASE);
     clrie += k;

@@ -8,29 +8,27 @@ void change_privilege(uint8_t priv_mode);
 int main()
 {
     uint8_t exit_status = 0;
-    aplic_init(96);
-
-    /* Generating single interrupt using APLIC */
-    printf("\n========= SINGLE INTERRUPT TEST =========\n");
-    aplic_send_msi(2, 0, 0, 15);
-
-    /* Generating multiple interrupts based on bit mask */
-    printf("\n========= MULTIPLE INTERRUPT TEST =========\n");
-    aplic_send_Nmsi(30, 5, 0, 0);
-
-    /* Delegation Test */
-    printf("\n========= DELEGATION TEST =========\n");
-    aplic_conf_sourcecfg(ROOT_MIRQ_DOMAIN, 4, true, 0);
-    aplic_conf_sourcecfg(C1_SIRQ_DOMAIN, 4, false, APLIC_SOURCECFG_SM_DETACH);
-
-    /* Going to supervisor mode */
-    // change_privilege(0x01);
+    aplic_init(IRQ_SRC_MAX);
 
     // __asm__ volatile ("ecall");
 
+    printf("\n========= SINGLE INTERRUPT TEST =========\n");
+    aplic_send_msi(2, 0, 0, 15);
+
+    printf("\n========= MULTIPLE INTERRUPT TEST =========\n");
+    aplic_send_Nmsi(30, 5, 0, 0);
+
+    printf("\n========= DELEGATION TEST =========\n");
+    aplic_conf_sourcecfg(4, ROOT_MIRQ_DOMAIN, 0, true);
+    aplic_conf_sourcecfg(4, C1_SIRQ_DOMAIN, APLIC_SOURCECFG_SM_DETACH, false);
+
+    printf("\n========= SINGLE INTERRUPT TEST =========\n");
     aplic_send_msi(4, 0, 0, 15);
 
-    aplic_Nirq_delegate(C1_SIRQ_DOMAIN, 30, 10, 1);
+    printf("\n========= MULTIPLE INTERRUPT TEST =========\n");
+    aplic_Nirq_delegate(30, 10, C1_SIRQ_DOMAIN, 0);
+    aplic_in_clrie(C1_SIRQ_DOMAIN, 1, 0x0000000F);
+
     aplic_send_Nmsi(30, 10, 0, 0);
 
     printf("Program exited!");
