@@ -12,17 +12,17 @@ int main()
     // __asm__ volatile ("ecall");
 
     printf("\n========= SINGLE INTERRUPT TEST =========\n");
-    aplic_send_msi(2, 0, 0, 15);
+    aplic_send_msi(64, 0, 0, 64);
 
     printf("\n========= MULTIPLE INTERRUPT TEST =========\n");
     aplic_send_Nmsi(30, 5, 0, 0);
 
     printf("\n========= DELEGATION TEST =========\n");
-    aplic_conf_sourcecfg(4, ROOT_MIRQ_DOMAIN, 0, true);
-    aplic_conf_sourcecfg(4, C0_MIRQ_DOMAIN, APLIC_SOURCECFG_SM_DETACH, false);
+    aplic_conf_sourcecfg(50, ROOT_MIRQ_DOMAIN, 0, true);
+    aplic_conf_sourcecfg(50, C0_MIRQ_DOMAIN, APLIC_SOURCECFG_SM_DETACH, false);
 
     printf("\n========= SINGLE INTERRUPT TEST =========\n");
-    aplic_send_msi(4, 0, 0, 15);
+    aplic_send_msi(50, 0, 0, 50);
 
     printf("\n========= MULTIPLE INTERRUPT TEST =========\n");
     aplic_Nirq_delegate(30, 10, C0_MIRQ_DOMAIN, 0);

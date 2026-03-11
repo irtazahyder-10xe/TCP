@@ -17,7 +17,12 @@
 
 .equ EIE_ADDR_START, 0xC0
 .equ IRQ_SRC_MAX, 96
-.equ EIE_ADDR_END, EIE_ADDR_START + (IRQ_SRC_MAX >> 6)
+/**
+ * EIE_ADDR_START + (2 * IRQ_SRC_MAX / 64), as only even number registers
+ * I.E lets say we have 96, so we would need to write registers eie[0] & eie[2]
+ * Hence we would start loop from 0 -> 2 -> 4 (where we break)
+ */
+.equ EIE_ADDR_END, EIE_ADDR_START + (IRQ_SRC_MAX >> 5)
 
 /* NOTE: For RV64 only even number eie & eip registers are configured */
 .equ EIE_ADDR_OFFSET, 0x2
