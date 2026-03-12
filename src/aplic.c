@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #include "mmio.h"
+#include "uart.h"
 
 #define NULL 0
 
@@ -11,30 +12,50 @@
 #define IRQ_DOMAINS 5
 
 typedef struct IrqDomain {
+    char name[10]; /*< name in format <mode>_<child_idx>,<parent_idx>*/
     bool mmode;
     uintptr_t base_addr;
     int32_t parent_idx;
 } IrqDomain;
 
 IrqDomain irq_domain_table[IRQ_DOMAINS] = {
-    {true,  ROOT_MIRQ_DOMAIN, -1},
-    {true,  L0_MIRQ_DOMAIN, 0},
-    {false, L0_SIRQ_DOMAIN, 0},
-    {true,  L1_MIRQ_DOMAIN, 1},
-    {false, L1_SIRQ_DOMAIN, 1},
+    {"ROOT", true,  ROOT_MIRQ_DOMAIN, -1},
+    {"M_0,0", true,  L0_MIRQ_DOMAIN, 0},
+    {"S_1,0", false, L0_SIRQ_DOMAIN, 0},
+    {"M_0,1", true,  L1_MIRQ_DOMAIN, 1},
+    {"S_1,1", false, L1_SIRQ_DOMAIN, 1},
 };
+
+static void print_irq_domain_name(uintptr_t irq_src_addr)
+{
+    for (uint32_t i = 0; i < IRQ_DOMAINS; i++) {
+        if (irq_domain_table[i].base_addr == irq_src_addr) {
+            printf("%s", irq_domain_table[i].name);
+        }
+    }
+}
 
 static uintptr_t src_irq_domain(uint32_t irq_src)
 {
     uint32_t srccfg;
-    bool D;
-    uint8_t domain_idx = 0;
-    do {
+    uint8_t domain_idx;
+
+    for (domain_idx = 0; domain_idx < IRQ_DOMAINS; domain_idx++) {
         srccfg = mmio_read_word(irq_domain_table[domain_idx].base_addr +
                                 APLIC_SOURCECFG_BASE,
                                 irq_src - 1);
-        D = !!(srccfg & APLIC_SOURCECFG_D);
-    } while (D && (++domain_idx < IRQ_DOMAINS));
+        if (!srccfg) {
+            continue;
+        }
+
+        /**
+         * If D bit is 0, and the register is not readonly zeros, then the
+         * interrupt is delegated in `domain_idx` interrupt domain
+         */
+        if (!(srccfg & APLIC_SOURCECFG_D)) {
+            break;
+        }
+    }
 
     return (domain_idx < IRQ_DOMAINS) ? irq_domain_table[domain_idx].base_addr
                                         : NULL;
@@ -112,6 +133,10 @@ void aplic_send_Nmsi(uint32_t base_irq_src, uint32_t irq_count,
         return;
     }
 
+    printf("\n~~~~~~~~~~~~~~~~\nWriting to Interrupt Domain \"");
+    print_irq_domain_name(irq_domain);
+    printf("\"\n~~~~~~~~~~~~~~~~\n");
+
     hart_index &= 0x3FFFUL;
     guest_index &= 0x3FUL;
     uint32_t target, setip_k, lsb_irq, bit_mask;
@@ -145,14 +170,14 @@ void aplic_conf_sourcecfg(uint32_t irq_src, uintptr_t irq_domain,
         return;
     }
 
-    uint32_t sourcecfg = 0;
+    uint32_t sourcecfg;
 
     /* As we are using MSI, SM either detached or inactive */
     if (D) {
-        sourcecfg |= APLIC_SOURCECFG_D;
+        sourcecfg = APLIC_SOURCECFG_D;
         sourcecfg |= child_index_or_sm & APLIC_SOURCECFG_CHILDIDX_MASK;
     } else {
-        sourcecfg |= child_index_or_sm & APLIC_SOURCECFG_SM_MASK;
+        sourcecfg = child_index_or_sm & APLIC_SOURCECFG_SM_MASK;
     }
 
     mmio_write_word(irq_domain + APLIC_SOURCECFG_BASE, irq_src - 1, sourcecfg);
