@@ -18,17 +18,17 @@ int main()
     aplic_send_Nmsi(30, 5, 0, 0);
 
     printf("\n========= DELEGATION TEST =========\n");
-    aplic_conf_sourcecfg(50, ROOT_MIRQ_DOMAIN, 0, true);
-    aplic_conf_sourcecfg(50, C0_MIRQ_DOMAIN, APLIC_SOURCECFG_SM_DETACH, false);
+    aplic_Nirq_delegate(50, 10, L0_MIRQ_DOMAIN, 0);
+    aplic_Nirq_delegate(60, 5, L0_SIRQ_DOMAIN, 1);
 
-    printf("\n========= SINGLE INTERRUPT TEST =========\n");
-    aplic_send_msi(50, 0, 0, 50);
+    aplic_Nirq_delegate(50, 5, L1_MIRQ_DOMAIN, 0);
+    aplic_Nirq_delegate(55, 5, L1_SIRQ_DOMAIN, 1);
 
     printf("\n========= MULTIPLE INTERRUPT TEST =========\n");
-    aplic_Nirq_delegate(30, 10, C0_MIRQ_DOMAIN, 0);
-    aplic_in_clrie(C0_MIRQ_DOMAIN, 1, 0x0000000F);
-
-    aplic_send_Nmsi(30, 10, 0, 0);
+    aplic_send_Nmsi(50, 5, 0, 0);
+    aplic_send_Nmsi(55, 5, 0, 0);
+    aplic_send_Nmsi(60, 5, 0, 0);
+    aplic_send_Nmsi(65, 5, 0, 0);
 
     printf("Program exited!");
 

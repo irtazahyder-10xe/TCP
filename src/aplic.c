@@ -8,28 +8,21 @@
 #define NULL 0
 
 /* Limit of IRQ_DOMAINS is the same as IRQ_DOMAINS_PER_SOCKET in hw/riscv/virt.h */
-#define IRQ_DOMAINS 2
+#define IRQ_DOMAINS 5
 
-uintptr_t irq_domain_table[IRQ_DOMAINS] = {
-    ROOT_MIRQ_DOMAIN,
-    C0_MIRQ_DOMAIN
+typedef struct IrqDomain {
+    bool mmode;
+    uintptr_t base_addr;
+    int32_t parent_idx;
+} IrqDomain;
+
+IrqDomain irq_domain_table[IRQ_DOMAINS] = {
+    {true,  ROOT_MIRQ_DOMAIN, -1},
+    {true,  L0_MIRQ_DOMAIN, 0},
+    {false, L0_SIRQ_DOMAIN, 0},
+    {true,  L1_MIRQ_DOMAIN, 1},
+    {false, L1_SIRQ_DOMAIN, 1},
 };
-
-// uintptr_t irq_domain_table[IRQ_DOMAINS] = {
-//     ROOT_MIRQ_DOMAIN,
-//     C1_SIRQ_DOMAIN
-// };
-
-/* #define IRQ_DOMAINS 5
-
-uintptr_t irq_domain_table[IRQ_DOMAINS] = {
-    ROOT_MIRQ_DOMAIN,
-    C0_MIRQ_DOMAIN,
-    C1_SIRQ_DOMAIN,
-    C2_SIRQ_DOMAIN,
-    C3_SIRQ_DOMAIN,
-};
-*/
 
 static uintptr_t src_irq_domain(uint32_t irq_src)
 {
@@ -37,46 +30,49 @@ static uintptr_t src_irq_domain(uint32_t irq_src)
     bool D;
     uint8_t domain_idx = 0;
     do {
-        srccfg = mmio_read_word(irq_domain_table[domain_idx] +
+        srccfg = mmio_read_word(irq_domain_table[domain_idx].base_addr +
                                 APLIC_SOURCECFG_BASE,
                                 irq_src - 1);
         D = !!(srccfg & APLIC_SOURCECFG_D);
     } while (D && (++domain_idx < IRQ_DOMAINS));
 
-    return (domain_idx < IRQ_DOMAINS) ? irq_domain_table[domain_idx] : NULL;
+    return (domain_idx < IRQ_DOMAINS) ? irq_domain_table[domain_idx].base_addr
+                                        : NULL;
 }
 
 void aplic_init(uint32_t irq_src_count)
 {
     /* ============ ROOT DOMAIN SETTINGS ============ */
     /* Setting mmsiaddrcfg & mmsiaddrcfgh */
-    mmio_write_word(irq_domain_table[0] + APLIC_MMSICFGADDR, 0,
-                    MACHINE_IF_ADDR >> 12);
-    mmio_write_word(irq_domain_table[0] + APLIC_MMSICFGADDRH, 0, 0);
+    mmio_write_word(irq_domain_table[0].base_addr + APLIC_MMSICFGADDR,
+                    0, MACHINE_IF_ADDR >> 12);
+    mmio_write_word(irq_domain_table[0].base_addr + APLIC_MMSICFGADDRH,
+                    0, 0);
 
     /* Setting smsiaddrcfg & smsiaddrcfgh */
-    mmio_write_word(irq_domain_table[0] + APLIC_SMSICFGADDR, 0,
-                    SUPERVISOR_IF_ADDR >> 12);
-    mmio_write_word(irq_domain_table[0] + APLIC_SMSICFGADDRH, 0, 0);
+    mmio_write_word(irq_domain_table[0].base_addr + APLIC_SMSICFGADDR,
+                    0, SUPERVISOR_IF_ADDR >> 12);
+    mmio_write_word(irq_domain_table[0].base_addr + APLIC_SMSICFGADDRH,
+                    0, 0);
 
     /* Configuring sourcecfg */
     /* By default all sourcecfg show interrupt is at root & DETACH */
     for (uint32_t i = 0; i < irq_src_count; i++)
     {
-        mmio_write_word(irq_domain_table[0] + APLIC_SOURCECFG_BASE,
+        mmio_write_word(irq_domain_table[0].base_addr + APLIC_SOURCECFG_BASE,
                         i, APLIC_SOURCECFG_SM_DETACH);
     }
 
     /* Enabling all specified interrupt sources for root domain ONLY */
     for (uint8_t i = 0; i < (irq_src_count >> 5); i++) {
-        aplic_setie(irq_domain_table[0], i, 0xFFFFFFFF);
+        aplic_setie(irq_domain_table[0].base_addr, i, 0xFFFFFFFF);
     }
 
     /* ============ COMMON DOMAIN SETTINGS ============ */
     /* Configuring domaincfg */
     for (int i = 0; i < IRQ_DOMAINS; i++) {
-        mmio_write_word(irq_domain_table[i] + APLIC_DOMAINCFG, 0,
-                        APLIC_DOMAINCFG_IE);
+        mmio_write_word(irq_domain_table[i].base_addr + APLIC_DOMAINCFG,
+                        0, APLIC_DOMAINCFG_IE);
     }
 }
 

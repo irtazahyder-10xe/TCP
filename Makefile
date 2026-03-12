@@ -5,8 +5,7 @@ QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
 QEMU_FLAGS := --cpu=x86_64 --enable-debug
 
 QEMU := ./env/qemu-system-riscv64
-# DOMAIN_CFG := domain-count=5,domain-mode=M_M_S_S_S,domain-parent=-1_0_0_1_1
-DOMAIN_CFG := domain-count=2,domain-mode=M_M,domain-parent=-1_0
+DOMAIN_CFG := domain-count=5,domain-mode=M_M_S_M_S,domain-parent=-1_0_0_1_1
 MACHINE := -M virt,aia=aplic-imsic
 ifeq ($(IDM_TEST),true)
 	MACHINE := $(MACHINE),$(DOMAIN_CFG)
@@ -31,7 +30,7 @@ LDFLAGS := -fdata-sections -Wl,--gc-sections
 CFLAGS := -march=rv64g -mabi=lp64 -mcmodel=medany -g -I $(CPATH) \
 	  -Wall -Werror -Wcast-align -Wconversion -Wrestrict -Wrestrict \
 	  -Wconversion -Wsign-conversion -Wshadow -Wpointer-arith -Wcast-align \
-	  -Wmissing-prototypes -g -O2 -Wimplicit-fallthrough -Wformat=2 \
+	  -Wmissing-prototypes -gdwarf -O2 -Wimplicit-fallthrough -Wformat=2 \
 	  -Wformat-security $(LDFLAGS)
 
 TARGETS := "riscv32-softmmu,riscv64-softmmu"
