@@ -16,31 +16,22 @@ typedef struct IrqDomain {
     bool mmode;
     uintptr_t base_addr;
     int32_t parent_idx;
+    uint32_t child_idx[IRQ_DOMAINS];
 } IrqDomain;
 
 IrqDomain irq_domain_table[IRQ_DOMAINS] = {
-    {"ROOT", true,  ROOT_MIRQ_DOMAIN, -1},
-    {"M_0,0", true,  L0_MIRQ_DOMAIN, 0},
-    {"S_1,0", false, L0_SIRQ_DOMAIN, 0},
-    {"M_0,1", true,  L1_MIRQ_DOMAIN, 1},
-    {"S_1,1", false, L1_SIRQ_DOMAIN, 1},
+    {"ROOT",    true,   ROOT_MIRQ_DOMAIN,   -1, {1, 2}},
+    {"M_0,0",   true,   L0_MIRQ_DOMAIN,     0,  {3, 4}},
+    {"S_1,0",   false,  L0_SIRQ_DOMAIN,     0,  {}},
+    {"M_0,1",   true,   L1_MIRQ_DOMAIN,     1,  {}},
+    {"S_1,1",   false,  L1_SIRQ_DOMAIN,     1,  {}},
 };
 
-static void print_irq_domain_name(uintptr_t irq_src_addr)
+static IrqDomain *src_irq_domain(uint32_t irq_src)
 {
-    for (uint32_t i = 0; i < IRQ_DOMAINS; i++) {
-        if (irq_domain_table[i].base_addr == irq_src_addr) {
-            printf("%s", irq_domain_table[i].name);
-        }
-    }
-}
+    uint32_t srccfg, child_idx, domain_idx;
 
-static uintptr_t src_irq_domain(uint32_t irq_src)
-{
-    uint32_t srccfg;
-    uint8_t domain_idx;
-
-    for (domain_idx = 0; domain_idx < IRQ_DOMAINS; domain_idx++) {
+    for (domain_idx = 0; domain_idx < IRQ_DOMAINS;) {
         srccfg = mmio_read_word(irq_domain_table[domain_idx].base_addr +
                                 APLIC_SOURCECFG_BASE,
                                 irq_src - 1);
@@ -55,9 +46,11 @@ static uintptr_t src_irq_domain(uint32_t irq_src)
         if (!(srccfg & APLIC_SOURCECFG_D)) {
             break;
         }
+        child_idx = srccfg & APLIC_SOURCECFG_CHILDIDX_MASK;
+        domain_idx = irq_domain_table[domain_idx].child_idx[child_idx];
     }
 
-    return (domain_idx < IRQ_DOMAINS) ? irq_domain_table[domain_idx].base_addr
+    return (domain_idx < IRQ_DOMAINS) ? &irq_domain_table[domain_idx]
                                         : NULL;
 }
 
@@ -104,7 +97,7 @@ void aplic_send_msi(uint32_t irq_src, uint32_t hart_index,
         return;
     }
 
-    uintptr_t irq_domain = src_irq_domain(irq_src);
+    IrqDomain *irq_domain = src_irq_domain(irq_src);
     if (irq_domain == NULL) {
         return;
     }
@@ -117,8 +110,10 @@ void aplic_send_msi(uint32_t irq_src, uint32_t hart_index,
     target |= guest_index << APLIC_TARGET_GUEST_IDX_SHIFT;
     target |= eiid;
 
-    mmio_write_word(irq_domain + APLIC_TARGET_BASE, irq_src - 1, target);
-    mmio_write_word(irq_domain + APLIC_SETIPNUM, 0, irq_src);
+    mmio_write_word(irq_domain->base_addr + APLIC_TARGET_BASE,
+                    irq_src - 1, target);
+    mmio_write_word(irq_domain->base_addr + APLIC_SETIPNUM,
+                    0, irq_src);
 }
 
 void aplic_send_Nmsi(uint32_t base_irq_src, uint32_t irq_count,
@@ -128,14 +123,15 @@ void aplic_send_Nmsi(uint32_t base_irq_src, uint32_t irq_count,
         return;
     }
 
-    uintptr_t irq_domain = src_irq_domain(base_irq_src);
+    IrqDomain *irq_domain = src_irq_domain(base_irq_src);
     if (irq_domain == NULL) {
         return;
     }
 
-    printf("\n~~~~~~~~~~~~~~~~\nWriting to Interrupt Domain \"");
-    print_irq_domain_name(irq_domain);
-    printf("\"\n~~~~~~~~~~~~~~~~\n");
+    printf("\n~~~~~~~~~~~~~~~~\n"
+           "Writing to Interrupt Domain \"%s\""
+           "\n~~~~~~~~~~~~~~~~\n",
+           irq_domain->name);
 
     hart_index &= 0x3FFFUL;
     guest_index &= 0x3FUL;
@@ -147,7 +143,8 @@ void aplic_send_Nmsi(uint32_t base_irq_src, uint32_t irq_count,
         target |= guest_index << APLIC_TARGET_GUEST_IDX_SHIFT;
         /* Setting EID to value of the interrupt generated */
         target |= (uint32_t) (i);
-        mmio_write_word(irq_domain + APLIC_TARGET_BASE, i - 1, target);
+        mmio_write_word(irq_domain->base_addr + APLIC_TARGET_BASE,
+                        i - 1, target);
     }
 
     do {
@@ -158,7 +155,8 @@ void aplic_send_Nmsi(uint32_t base_irq_src, uint32_t irq_count,
             bit_mask &= (uint32_t) ((1UL << (lsb_irq + irq_count)) - 1);
         }
 
-        mmio_write_word(irq_domain + APLIC_SETIP_BASE, setip_k, bit_mask);
+        mmio_write_word(irq_domain->base_addr + APLIC_SETIP_BASE,
+                        setip_k, bit_mask);
         base_irq_src += 32 - lsb_irq;
     } while (base_irq_src < max_irq_src);
 }
@@ -189,7 +187,7 @@ void aplic_conf_sourcecfg(uint32_t irq_src, uintptr_t irq_domain,
 }
 
 void aplic_Nirq_delegate(uint32_t base_irq_src, uint32_t irq_count,
-                         uintptr_t irq_domain, uint32_t child_index)
+                         uint32_t child_idx)
 {
     if (!base_irq_src) {
         return;
@@ -202,23 +200,30 @@ void aplic_Nirq_delegate(uint32_t base_irq_src, uint32_t irq_count,
      * requied to base_irq_src - 1 to find required sourcecfg MMR address
      */
     uint32_t max_irq_src = base_irq_src + irq_count;
-    uintptr_t parent_srccfg_addr = src_irq_domain(base_irq_src) +
-                                   APLIC_SOURCECFG_BASE;
+    IrqDomain *parent = src_irq_domain(base_irq_src);
+    if (parent == NULL) {
+        return;
+    }
+
+    uintptr_t parent_srccfg_addr, child_addr, child_srccfg_addr;
+    parent_srccfg_addr = parent->base_addr + APLIC_SOURCECFG_BASE;
     if (!parent_srccfg_addr) {
         return;
     }
+
+    child_addr = irq_domain_table[parent->child_idx[child_idx]].base_addr;
+    child_srccfg_addr = child_addr + APLIC_SOURCECFG_BASE;
 
     uint32_t child_srccfg, parent_srccfg;
 
     for (uint32_t i = base_irq_src; i < max_irq_src; i++) {
         parent_srccfg = APLIC_SOURCECFG_D;
-        parent_srccfg |= child_index & APLIC_SOURCECFG_CHILDIDX_MASK;
+        parent_srccfg |= child_idx & APLIC_SOURCECFG_CHILDIDX_MASK;
 
         child_srccfg = APLIC_SOURCECFG_SM_DETACH;
 
         mmio_write_word(parent_srccfg_addr, i - 1, parent_srccfg);
-        mmio_write_word(irq_domain + APLIC_SOURCECFG_BASE, i - 1,
-                        child_srccfg);
+        mmio_write_word(child_srccfg_addr, i - 1, child_srccfg);
     }
 
     /**
@@ -226,7 +231,7 @@ void aplic_Nirq_delegate(uint32_t base_irq_src, uint32_t irq_count,
      * Only sources with valid sourcecfg registers get configured in setie.
      */
     while ((base_irq_src < max_irq_src) && (base_irq_src < IRQ_SRC_MAX)) {
-        aplic_setie(irq_domain, base_irq_src >> 5, 0xFFFFFFFF);
+        aplic_setie(child_addr, base_irq_src >> 5, 0xFFFFFFFF);
         base_irq_src += 32 - (base_irq_src % 32);
     }
 }
@@ -236,7 +241,7 @@ void aplic_setie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask)
     mmio_write_word(irq_domain + APLIC_SETIE_BASE, k, bit_mask);
 }
 
-void aplic_in_clrie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask)
+void aplic_clrie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask)
 {
     mmio_write_word(irq_domain + APLIC_CLRIE_BASE, k, bit_mask);
 }

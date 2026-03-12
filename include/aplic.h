@@ -15,11 +15,11 @@
  * configurations
  * @{
  */
-#define ROOT_MIRQ_DOMAIN 0xc000000
-#define L0_MIRQ_DOMAIN ROOT_MIRQ_DOMAIN + 0x4000
-#define L0_SIRQ_DOMAIN 0xd000000
-#define L1_MIRQ_DOMAIN L0_MIRQ_DOMAIN + 0x4000
-#define L1_SIRQ_DOMAIN L0_SIRQ_DOMAIN + 0x4000
+#define ROOT_MIRQ_DOMAIN (0xc000000)
+#define L0_MIRQ_DOMAIN (ROOT_MIRQ_DOMAIN + 0x4000)
+#define L0_SIRQ_DOMAIN (0xd000000)
+#define L1_MIRQ_DOMAIN (L0_MIRQ_DOMAIN + 0x4000)
+#define L1_SIRQ_DOMAIN (L0_SIRQ_DOMAIN + 0x4000)
 /** @} */
 
 /**
@@ -97,6 +97,9 @@ void aplic_send_msi(uint32_t irq_src, uint32_t hart_index,
  *                    file
  *
  * @note eiid will be the same as the interrupt source number.
+ * @warning the function only works for MSIs in the same domain. If MSIs of
+ *          overlapping domains are used, only the domain containing
+ *          base_irq_src would be configured.
  */
 void aplic_send_Nmsi(uint32_t base_irq_src, uint32_t irq_count,
                      uint32_t hart_index, uint32_t guest_index);
@@ -129,7 +132,7 @@ void aplic_conf_sourcecfg(uint32_t irq_src, uintptr_t irq_domain,
  * @note eiid will be the same as the interrupt source number.
  */
 void aplic_Nirq_delegate(uint32_t base_irq_src, uint32_t irq_count,
-                         uintptr_t irq_domain, uint32_t child_index);
+                         uint32_t child_index);
 
 /**
  * @brief Enables interrupt in irq_domain based on bit_mask
@@ -147,4 +150,4 @@ void aplic_setie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask);
  * @param k Index of clrie[k] MMR to set
  * @param bit_mask 32-bit mask to set the 32 bit MMR clrie[k]
  */
-void aplic_in_clrie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask);
+void aplic_clrie(uintptr_t irq_domain, uint32_t k, uint32_t bit_mask);

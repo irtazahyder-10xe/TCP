@@ -18,11 +18,15 @@ int main()
     aplic_send_Nmsi(30, 5, 0, 0);
 
     printf("\n========= DELEGATION TEST =========\n");
-    aplic_Nirq_delegate(50, 10, L0_MIRQ_DOMAIN, 0);
-    aplic_Nirq_delegate(60, 5, L0_SIRQ_DOMAIN, 1);
+    aplic_Nirq_delegate(50, 10, 0);
+    aplic_Nirq_delegate(60, 5, 1);
 
-    aplic_Nirq_delegate(50, 5, L1_MIRQ_DOMAIN, 0);
-    aplic_Nirq_delegate(55, 5, L1_SIRQ_DOMAIN, 1);
+    aplic_Nirq_delegate(50, 5, 0);
+    aplic_Nirq_delegate(55, 5, 1);
+
+    aplic_clrie(L0_SIRQ_DOMAIN, 1, (1UL << (61 % 32)));
+    aplic_clrie(L1_MIRQ_DOMAIN, 1, (1UL << (53 % 32)));
+    aplic_clrie(L1_SIRQ_DOMAIN, 1, (1UL << (57 % 32)));
 
     printf("\n========= MULTIPLE INTERRUPT TEST =========\n");
     aplic_send_Nmsi(50, 5, 0, 0);
