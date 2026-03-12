@@ -3,3 +3,4 @@ env/
 .*
 compile_commands.json
 misc/
+gdb/

@@ -5,7 +5,11 @@ QEMU_PATH := /home/lpt-10xe-10/Desktop/10xAssignments/qemu/qemu
 QEMU_FLAGS := --cpu=x86_64 --enable-debug
 
 QEMU := ./env/qemu-system-riscv64
-MACHINE := -M virt,aia=aplic
+DOMAIN_CFG := domain-count=5,domain-mode=M_M_S_M_S,domain-parent=-1_0_0_1_1
+MACHINE := -M virt,aia=aplic-imsic
+ifeq ($(IDM_TEST),true)
+	MACHINE := $(MACHINE),$(DOMAIN_CFG)
+endif
 CPUS := -cpu rv64,c=off -smp 1,cores=1,threads=1 -m maxmem=16G
 ACCEL := -accel tcg
 DEVICE := 
@@ -18,14 +22,15 @@ BOOT = $(DEBUG) -bios none -device loader,file=$(BOOT_FILE),addr=0x80000000
 PREFIX := riscv64-unknown-elf
 GCC := $(PREFIX)-gcc
 OBJDUMP := $(PREFIX)-objdump
-GDB := $(PREFIX)-gdb
+RISCV_GDB := $(PREFIX)-gdb
+x86_GDB := gdb
 
 CPATH := ./include
 LDFLAGS := -fdata-sections -Wl,--gc-sections
 CFLAGS := -march=rv64g -mabi=lp64 -mcmodel=medany -g -I $(CPATH) \
 	  -Wall -Werror -Wcast-align -Wconversion -Wrestrict -Wrestrict \
 	  -Wconversion -Wsign-conversion -Wshadow -Wpointer-arith -Wcast-align \
-	  -Wmissing-prototypes -g -O2 -Wimplicit-fallthrough -Wformat=2 \
+	  -Wmissing-prototypes -gdwarf -O2 -Wimplicit-fallthrough -Wformat=2 \
 	  -Wformat-security $(LDFLAGS)
 
 TARGETS := "riscv32-softmmu,riscv64-softmmu"
@@ -84,10 +89,14 @@ run_vm: $(BOOT_FILE)
 			$(INTERFACE) \
 			$(BOOT)
 		
-gdb:
+gdb_vm:
 	# For now using the -s flag in vm to automatically connect to GDB at
 	# tcp:1234
-	$(GDB) $(BOOT_FILE) -ex "target remote localhost:1234"
+	$(RISCV_GDB) $(BOOT_FILE) -ex "target remote localhost:1234"
+
+gdb_qemu:
+	# run $(arguments) i.e. run -M virt
+	$(x86_GDB) $(QEMU)
 
 dtb_to_dts:
 ifndef DTB

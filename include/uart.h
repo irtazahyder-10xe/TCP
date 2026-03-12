@@ -2,15 +2,14 @@
 
 /**
  * @brief Base address for the UART controller.
- * * This address points to the start of the MMIO range for the 16550-compatible 
- * UART hardware.
+ * Address pointing to the start of the MMIO range for the 16550 UART
  */
 #define UART_ADDR 0x10000000
 
 /**
  * @name UART Register Offsets
  * List of offsets for the UART control and status registers. 
- * Note that some registers are multiplexed based on the DLAB bit in the LCR.
+ * @note that some registers are multiplexed based on the DLAB bit in the LCR.
  * @{
  */
 
